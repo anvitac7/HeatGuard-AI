@@ -1,0 +1,138 @@
+{
+  "input_file": "heatguard_raw.csv",
+  "rows_in": 187387,
+  "duplicates_dropped": 0,
+  "calendar_gaps": {
+    "total": 40,
+    "by_gap_length_days": {
+      "2": 29,
+      "3": 6,
+      "84": 5
+    },
+    "by_city": {
+      "Ahmedabad": 5,
+      "Bengaluru": 7,
+      "Chennai": 10,
+      "Delhi": 2,
+      "Kolkata": 6,
+      "Mumbai": 5,
+      "Pune": 5
+    },
+    "largest_gap_days": 84
+  },
+  "temp_min_zero_placeholders": [
+    {
+      "city": "Bengaluru",
+      "date": "2019-01-11"
+    }
+  ],
+  "temp_min_missing_before": 34,
+  "temp_min_imputed": 34,
+  "temp_min_missing_after": 0,
+  "rain_invalidated": [
+    {
+      "city": "Kolkata",
+      "date": "2023-12-01",
+      "raw_rain_mm": 1014.5
+    },
+    {
+      "city": "Mumbai",
+      "date": "2023-12-01",
+      "raw_rain_mm": 1011.7
+    }
+  ],
+  "rain_kept_extreme_monsoon_days": [
+    {
+      "city": "Delhi",
+      "date": "1957-09-14",
+      "rain_mm": 303.4
+    },
+    {
+      "city": "Kolkata",
+      "date": "1978-09-28",
+      "rain_mm": 319.7
+    },
+    {
+      "city": "Pune",
+      "date": "1967-07-29",
+      "rain_mm": 337.9
+    },
+    {
+      "city": "Pune",
+      "date": "2005-07-26",
+      "rain_mm": 413.9
+    }
+  ],
+  "rain_missing_total": 51596,
+  "rain_missing_by_city_pct": {
+    "Ahmedabad": 0.11,
+    "Bengaluru": 0.48,
+    "Chennai": 95.62,
+    "Delhi": 0.18,
+    "Kolkata": 0.25,
+    "Mumbai": 95.74,
+    "Pune": 0.24
+  },
+  "severity_mismatches": 0,
+  "validation_checks": {
+    "no_nulls_in_model_columns": true,
+    "no_duplicate_city_date": true,
+    "sorted_by_city_date": true,
+    "temp_min_not_above_temp_max": true,
+    "is_heatwave_matches_departure_rule": true,
+    "severity_matches_departure_rule": true,
+    "rain_non_negative": true,
+    "rain_flag_consistent": true,
+    "segments_have_no_internal_gaps": true
+  },
+  "rows_out": 187387,
+  "date_range": [
+    "1951-01-01",
+    "2024-06-21"
+  ],
+  "rows_by_city": {
+    "Ahmedabad": 26748,
+    "Bengaluru": 26827,
+    "Chennai": 26826,
+    "Delhi": 26749,
+    "Kolkata": 26745,
+    "Mumbai": 26746,
+    "Pune": 26746
+  },
+  "severity_counts": {
+    "Normal": 185596,
+    "Warning": 1663,
+    "Severe": 126,
+    "Extreme": 2
+  },
+  "segments_by_city": {
+    "Ahmedabad": 6,
+    "Bengaluru": 8,
+    "Chennai": 11,
+    "Delhi": 3,
+    "Kolkata": 7,
+    "Mumbai": 6,
+    "Pune": 6
+  },
+  "columns_out": [
+    "date",
+    "city",
+    "latitude",
+    "longitude",
+    "temp_max",
+    "temp_min",
+    "rain",
+    "year",
+    "month",
+    "day_of_year",
+    "season",
+    "heatwave_threshold",
+    "is_heatwave_day",
+    "severity",
+    "days_since_prev",
+    "gap_before",
+    "segment_id",
+    "temp_min_imputed",
+    "rain_is_recorded"
+  ]
+}
