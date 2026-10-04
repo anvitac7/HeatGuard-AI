@@ -4,7 +4,7 @@
 >
 > Status legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Last updated:** 2026-10-04
+**Last updated:** 2026-10-04 (Phase 1 code complete, pending review)
 **Repo:** https://github.com/anvitac7/HeatGuard-AI
 **Reference doc:** `HeatGuard_AI_Implementation_Plan_Dataset_Specific.md`
 
@@ -29,12 +29,12 @@ HeatGuard AI predicts **next-day heatwaves** for 7 Indian cities and turns the p
 
 Roles are **not decided yet**. Suggested split below; fill in names once agreed.
 
-| Workstream | Covers phases | Owner |
+| Workstream | Covers phases |
 |---|---|---|
-| **A. Data & Features** | 1, 2 | _TBD_ (currently: **Anvita**, starting preprocessing) |
-| **B. ML Modeling** | 3, 4 | _TBD_ |
-| **C. Backend + GenAI** | 5, 7 | _TBD_ |
-| **D. Frontend + Integration** | 6, 8 | _TBD_ |
+| **A. Data & Features** | 1, 2 |
+| **B. ML Modeling** | 3, 4 | 
+| **C. Backend + GenAI** | 5, 7 | 
+| **D. Frontend + Integration** | 6, 8 |
 
 > With 3 people, one person will need to take two workstreams. A natural pairing is **C + D** (or B + A). Decide this before Phase 3 starts.
 
@@ -44,17 +44,17 @@ Roles are **not decided yet**. Suggested split below; fill in names once agreed.
 
 | Phase | Name | Status | Owner |
 |---|---|---|---|
-| 0 | Planning & dataset profiling | `[x]` Done | Team |
-| 1 | Data preprocessing & calendar pipeline | `[~]` Starting now | Anvita |
-| 2 | Zero-leakage feature engineering | `[ ]` Not started | _TBD_ |
-| 3 | Baseline models | `[ ]` Not started | _TBD_ |
-| 4 | LightGBM / CatBoost + two-stage hybrid engine | `[ ]` Not started | _TBD_ |
-| 5 | Flask REST backend | `[ ]` Not started | _TBD_ |
-| 6 | Dashboard, Leaflet map, analytics UI | `[ ]` Not started | _TBD_ |
-| 7 | GenAI advisory + chatbot | `[ ]` Not started | _TBD_ |
-| 8 | Integration, verification, demo | `[ ]` Not started | _TBD_ |
+| 0 | Planning & dataset profiling | `[x]` Done | 
+| 1 | Data preprocessing & calendar pipeline | `[x]` Code done, needs teammate review |
+| 2 | Zero-leakage feature engineering | `[ ]` Not started |
+| 3 | Baseline models | `[ ]` Not started |
+| 4 | LightGBM / CatBoost + two-stage hybrid engine | `[ ]` Not started | 
+| 5 | Flask REST backend | `[ ]` Not started | 
+| 6 | Dashboard, Leaflet map, analytics UI | `[ ]` Not started |
+| 7 | GenAI advisory + chatbot | `[ ]` Not started | 
+| 8 | Integration, verification, demo | `[ ]` Not started |
 
-**Rough completion:** ~1 of 9 phases done.
+**Rough completion:** 2 of 9 phases done (Phase 1 awaiting review).
 
 ---
 
@@ -67,37 +67,46 @@ Roles are **not decided yet**. Suggested split below; fill in names once agreed.
 
 ---
 
-### Phase 1 — Data Preprocessing & Calendar Pipeline 🔨 *(Anvita — in progress)*
-**Output:** `preprocessing/data_cleaner.py` + a cleaned CSV that Phase 2 can read.
-**Blocks:** Phase 2 (and therefore everything after it).
+### Phase 1 — Data Preprocessing & Calendar Pipeline ✅ *(Anvita — code complete, needs review)*
+**Files:** `preprocessing/data_cleaner.py`, `data/heatguard_clean.csv`, `data/cleaning_report.json`
+**Run it:** `python preprocessing/data_cleaner.py` (from repo root; reads `heatguard_raw.csv`)
+**Unblocks:** Phase 2 (and therefore everything after it).
 
-- [ ] Create folder structure (`data/`, `preprocessing/`, `models/`)
-- [ ] Load CSV, parse `date` as datetime, sort by `['city', 'date']`
-- [ ] Confirm 0 duplicate `(city, date)` pairs (already verified once on the raw file)
-- [ ] Impute 33 missing `temp_min` values by linear interpolation **within each city**
-- [ ] Handle `rain`: fill NaN with `0.0` and add `rain_is_recorded` flag (0 = not measured)
-- [ ] Detect the 40 calendar gaps and add a `gap_before` / `days_since_prev` column so Phase 2 can reset lag windows
-- [ ] Sanity-check outliers (see findings below) and decide: keep, cap, or flag
-- [ ] Save cleaned file (e.g. `data/heatguard_clean.csv`)
-- [ ] Write a short validation script/notebook: row counts, null counts, gap counts before vs after
+- [x] Create folder structure (`data/`, `preprocessing/`)
+- [x] Load CSV, parse `date` as datetime, sort by `['city', 'date']`
+- [x] Confirm 0 duplicate `(city, date)` pairs (script drops any it finds)
+- [x] Impute missing `temp_min` by linear interpolation **within each city and segment** (34 values: 33 NaN + 1 zero placeholder)
+- [x] Handle `rain`: NaN filled with `0.0` and `rain_is_recorded` flag added (0 = not measured)
+- [x] Detect the 40 calendar gaps and add `days_since_prev`, `gap_before`, `segment_id`
+- [x] Sanity-check outliers and decide (see decisions below)
+- [x] Save cleaned file `data/heatguard_clean.csv`
+- [x] Automated validation inside the script (9 checks, run fails loudly if any break)
+- [ ] **Teammate review** of the cleaning decisions below (5 min read)
+- [ ] Move `heatguard_raw.csv` into `data/` (the script finds it in either place)
 
-**Known data findings (verified on `heatguard_raw.csv`):**
+**Cleaning decisions made (please sanity-check these):**
 
-| Check | Result |
-|---|---|
-| Shape | 187,387 rows × 14 columns ✅ matches the plan |
-| Duplicates on `(city, date)` | 0 |
-| Missing `temp_min` | 33 |
-| Missing `rain` | 51,594 (27.5%), mostly Chennai & Mumbai before 2021 |
-| Calendar gaps (>1 day) | 40, largest is **84 days** ending 2024-02-23 (same in several cities) |
-| Class counts | Normal 185,596 · Warning 1,663 · Severe 126 · Extreme 2 |
-| `temp_min == 0.0` | 1 row, **suspicious** (probably a placeholder, check it) |
-| `rain > 300 mm` | 6 rows, max 1014.5 mm, **check whether these are real** |
-| Thresholds | Bengaluru, Kolkata, Mumbai, Pune are constant at 40.0 °C. Delhi, Ahmedabad and Chennai vary by year. |
+| Issue | What we found | What we did |
+|---|---|---|
+| `temp_min` NaN (33) | 2019-01-11 and 2024-04-16 are missing in several cities, plus 20 scattered in Chennai | Linear interpolation inside a segment, max 3 days in a row. All imputed values lie between their neighbours. Flagged in `temp_min_imputed`. |
+| `temp_min == 0.0` (1) | Bengaluru 2019-01-11, the **same date** all 6 other cities are NaN, so it is a missing-data placeholder | Treated as NaN, then interpolated (to 14.1 °C) |
+| `rain` NaN (51,594) | Chennai and Mumbai have no rain data before 2021 | Filled with 0.0 and `rain_is_recorded = 0`. Chennai is 4.4% recorded, Mumbai 4.3%. |
+| `rain` 1014.5 / 1011.7 mm | Kolkata and Mumbai on 2023-12-01 (December, neighbouring days are 0 mm) | Impossible values, so set to "not recorded" (0.0 and flag 0). Rule: >300 mm outside Jun–Sep is invalid. |
+| `rain` 303–414 mm (4 rows) | Delhi 1957, Kolkata 1978, Pune 1967 and 2005, all in monsoon months | Kept, since they are plausible heavy-monsoon days. |
+| Calendar gaps (40) | 29 of 2 days, 6 of 3 days, 5 of 84 days (ends 2024-02-23) | **Rows are not inserted.** Each city is split into segments (`segment_id`) so Phase 2 can reset lags. |
+| Labels | `is_heatwave_day` and `severity` still match the departure rule on all rows | Untouched |
 
-**⚠️ Things to flag to the team:**
-1. The repo file is named **`heatguard_raw.csv`**, but the plan refers to `heatguard_clean.csv`. Our cleaning step is what produces the "clean" file, so the plan wording is just ahead of the work.
-2. The Gantt chart in the plan shows some tasks as `:done` / `:active`. **That does not reflect reality**, since no code has been written yet. This file is the source of truth for status.
+**Output schema:** the original 14 columns plus 5 new ones: `days_since_prev`, `gap_before`, `segment_id`, `temp_min_imputed`, `rain_is_recorded`. The cleaned file still has 187,387 rows and 0 nulls.
+
+**⚠️ For whoever does Phase 2:**
+1. Compute **every** lag and rolling feature with `groupby(['city', 'segment_id'])`, never just `groupby('city')`.
+2. The next-day target must only exist when the next row is exactly 1 day later. Use `days_since_prev` of the following row, and drop the target if it is not 1.
+3. `rain_is_recorded` is a real feature and should go into the model.
+4. Do **not** use `temp_min_imputed`, `gap_before` or `segment_id` as model inputs. They are bookkeeping columns.
+
+**Things to flag to the team:**
+1. The repo file is named **`heatguard_raw.csv`**, but the plan refers to `heatguard_clean.csv`. Our cleaning step now produces the "clean" file.
+2. The Gantt chart in the plan shows some tasks as `:done` / `:active`. **That does not reflect reality**, so this file is the source of truth for status.
 3. Only 2 "Extreme" rows exist, so the severity classifier cannot learn that class. Severity should come from the regressor's predicted departure (as the plan describes), not from direct classification.
 
 ---
@@ -188,7 +197,7 @@ Roles are **not decided yet**. Suggested split below; fill in names once agreed.
 
 ## 5. What Can Start Right Now (for teammates)
 
-Phase 1 is in progress, but not everything is blocked by it:
+Phase 1 is done (pending review), so **Phase 2 can start now**. Beyond that, these are also unblocked:
 
 | Teammate could start… | Why it's unblocked |
 |---|---|
@@ -207,7 +216,8 @@ Newest entries first. Format: `date — name — what was done`.
 
 | Date | Who | What |
 |---|---|---|
-| 2026-10-04 | Anvita | Reviewed implementation plan and raw dataset, verified profiling numbers, created this progress tracker. Starting Phase 1 (preprocessing). |
+| 2026-10-04 | Anvita | Phase 1 done: wrote `preprocessing/data_cleaner.py`, generated `data/heatguard_clean.csv` (187,387 rows, 0 nulls) and `data/cleaning_report.json`. All 9 validation checks pass. Needs teammate review. |
+| 2026-10-04 | Anvita | Reviewed implementation plan and raw dataset, verified profiling numbers, created this progress tracker. |
 
 ---
 
@@ -215,6 +225,6 @@ Newest entries first. Format: `date — name — what was done`.
 
 - [ ] Who owns which workstream (see §2)
 - [ ] Which LLM provider for the advisory/chatbot (Gemini / OpenAI / Anthropic / Hugging Face)
-- [ ] How to treat suspicious values (`rain > 300 mm`, `temp_min == 0`): keep, cap, or flag
+- [x] How to treat suspicious values: decided in Phase 1 (see table). Teammates can still challenge it in review.
 - [ ] Whether to attempt stretch models (TFT, Chronos, TimesFM) or stop at LightGBM/CatBoost
 - [ ] Git workflow: branch per person + pull requests, or commit directly to `main`
