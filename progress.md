@@ -4,7 +4,7 @@
 >
 > Status legend: `[ ]` not started · `[~]` in progress · `[x]` done
 
-**Last updated:** 2026-10-04 (Phase 1 code complete, pending review)
+**Last updated:** 2026-10-04 (Phases 1 and 2 code complete, pending review)
 **Repo:** https://github.com/anvitac7/HeatGuard-AI
 **Reference doc:** `HeatGuard_AI_Implementation_Plan_Dataset_Specific.md`
 
@@ -29,12 +29,12 @@ HeatGuard AI predicts **next-day heatwaves** for 7 Indian cities and turns the p
 
 Roles are **not decided yet**. Suggested split below; fill in names once agreed.
 
-| Workstream | Covers phases |
+| Workstream | Covers phases | 
 |---|---|---|
-| **A. Data & Features** | 1, 2 |
+| **A. Data & Features** | 1, 2 | 
 | **B. ML Modeling** | 3, 4 | 
 | **C. Backend + GenAI** | 5, 7 | 
-| **D. Frontend + Integration** | 6, 8 |
+| **D. Frontend + Integration** | 6, 8 | 
 
 > With 3 people, one person will need to take two workstreams. A natural pairing is **C + D** (or B + A). Decide this before Phase 3 starts.
 
@@ -45,16 +45,16 @@ Roles are **not decided yet**. Suggested split below; fill in names once agreed.
 | Phase | Name | Status | Owner |
 |---|---|---|---|
 | 0 | Planning & dataset profiling | `[x]` Done | 
-| 1 | Data preprocessing & calendar pipeline | `[x]` Code done, needs teammate review |
-| 2 | Zero-leakage feature engineering | `[ ]` Not started |
-| 3 | Baseline models | `[ ]` Not started |
+| 1 | Data preprocessing & calendar pipeline | `[x]` Code done, needs teammate review | 
+| 2 | Zero-leakage feature engineering | `[x]` Code done, needs teammate review | 
+| 3 | Baseline models | `[ ]` Not started | 
 | 4 | LightGBM / CatBoost + two-stage hybrid engine | `[ ]` Not started | 
 | 5 | Flask REST backend | `[ ]` Not started | 
-| 6 | Dashboard, Leaflet map, analytics UI | `[ ]` Not started |
+| 6 | Dashboard, Leaflet map, analytics UI | `[ ]` Not started | 
 | 7 | GenAI advisory + chatbot | `[ ]` Not started | 
-| 8 | Integration, verification, demo | `[ ]` Not started |
+| 8 | Integration, verification, demo | `[ ]` Not started | 
 
-**Rough completion:** 2 of 9 phases done (Phase 1 awaiting review).
+**Rough completion:** 3 of 9 phases done (Phases 1 and 2 awaiting review).
 
 ---
 
@@ -111,18 +111,50 @@ Roles are **not decided yet**. Suggested split below; fill in names once agreed.
 
 ---
 
-### Phase 2 — Zero-Leakage Feature Engineering
-**Needs:** Phase 1 output. **Output:** `preprocessing/feature_engineering.py`, `data/model_ready_dataset.csv`.
+### Phase 2 — Zero-Leakage Feature Engineering ✅ *(Anvita — code complete, needs review)*
+**Files:** `preprocessing/feature_engineering.py`, `data/model_ready_dataset.csv`, `data/feature_schema.json`, `data/feature_report.json`
+**Run it:** `python preprocessing/feature_engineering.py` (reads `data/heatguard_clean.csv`, takes a few minutes at most)
+**Unblocks:** Phases 3 and 4 (model training).
 
-- [ ] Lag features: `temp_max` / `temp_min` lags 1, 2, 3, 7; `rain` lags 1, 3, 7
-- [ ] Rolling features: 3d/7d averages, 7d max, 7d rain sum, 3d diurnal range average
-- [ ] Cyclical encodings: `sin/cos` of day-of-year and month
-- [ ] Derived: `diurnal_temp_range`, `temp_departure_today`, `heatwave_streak_days`, `year_scaled`
-- [ ] One-hot encode `city` and `season`
-- [ ] Reset lags/rolling windows across calendar gaps (no cross-gap contamination)
-- [ ] Create the 3 next-day targets (shifted by −1 within each city); drop the last row per city
-- [ ] Verify there is no leakage: Day-t `is_heatwave_day`, `severity` and `heatwave_threshold` are **not** used as raw inputs
-- [ ] Chronological split: Train ≤2015 / Val 2016–2020 / Test 2021–2024
+- [x] Lag features: `temp_max` / `temp_min` lags 1, 2, 3, 7; `rain` lags 1, 3, 7
+- [x] Rolling features: 3d/7d averages, 7d max, 7d rain sum, 3d diurnal range average
+- [x] Cyclical encodings: `sin/cos` of day-of-year and month
+- [x] Derived: `diurnal_temp_range`, `temp_departure_today`, `heatwave_streak_days`, `year_scaled`
+- [x] One-hot encode `city` and `season` (string columns kept too, for CatBoost)
+- [x] Lags and rolling windows computed inside `(city, segment_id)`, so none cross a calendar gap
+- [x] Create the 3 next-day targets plus `target_temp_max_next_day` for the Stage 1 regressor
+- [x] Leakage verification: 12 automated checks (see below), all passing
+- [x] Chronological split label in a `split` column
+- [ ] **Teammate review** of the decisions below
+
+**Output:** 187,022 rows, 57 columns, 0 nulls. 45 of the columns are model features. The full list, grouped, is in `data/feature_schema.json`, which is what Phase 3 should read to know what to feed the models.
+
+**Split (by the date of the target day, so no training row has a target in the validation period):**
+
+| Split | Rows | Heatwave next day | Positive rate |
+|---|---|---|---|
+| Train (to 2015) | 166,131 | 1,395 | 0.84% |
+| Val (2016–2020) | 12,771 | 125 | 0.98% |
+| Test (2021–2024) | 8,120 | 265 | 3.26% |
+
+**How leakage is checked:** the script recomputes a random sample of 3,000 rows from the clean data using plain date lookups (independent of the pandas `shift` code) and compares lags, rolling windows, the heatwave streak and all targets. It also checks that no forbidden column is a feature, the target date is exactly t+1, the split is chronological, and the labels agree with each other. I also fed it deliberately leaky data (tomorrow's temperature as "lag1", and today's label as the target) and it caught both.
+
+**Decisions made (please sanity-check these):**
+
+| Decision | Why |
+|---|---|
+| Rows without a full 7-day history are dropped (318 rows), plus rows with no valid next-day target (47 rows) | Keeps every window inside one segment. 365 rows lost in total (0.2%). |
+| `is_heatwave_day`, `severity`, `heatwave_threshold` are kept in the file as **reference columns, never features** | The persistence baseline and evaluation need them, and they are listed under `reference_columns_never_inputs` in the schema |
+| **Added** `threshold_next_day` and `gap_to_next_threshold` as features (not in the original plan) | The IMD threshold follows a fixed calendar per city and day of year (Delhi goes from 40 to 44.6 °C across the season), so tomorrow's threshold is known today. This is not leakage, but it is an addition to the plan, so **please confirm you are happy with it**. Drop both if not. |
+| Float features rounded to 4 decimals | Removes float32 noise and cuts the file from 98 MB to 59 MB. Targets and reference columns are left exact. |
+| `model_ready_dataset.csv` is in `.gitignore` | It is regenerable in one command and is 59 MB. The clean CSV (19 MB) is still committed. |
+
+**⚠️ For whoever does Phase 3 and 4:**
+1. **The test period looks different from training.** The test positive rate is 3.26% against 0.84% in training, which is the 2021–2024 climate surge the plan describes. Expect the test PR-AUC to differ from validation, and tune thresholds on validation only.
+2. **Extreme severity exists only in the test set** (2 rows). Train and validation have 0, so no classifier can learn it. Derive severity from the regressor's predicted departure.
+3. **The test set has 8,120 rows**, not the ~10,600 the plan estimated. The plan's number was a rough guess, and the real count is what the dataset contains.
+4. Sanity check passed: P(heatwave tomorrow | heatwave today) is 63.15%, matching the plan's 63.11%.
+5. Select features from `feature_schema.json` (`feature_columns`). Never use the `reference_columns_never_inputs`, any `target_*` column, or the meta columns.
 
 ---
 
@@ -197,16 +229,16 @@ Roles are **not decided yet**. Suggested split below; fill in names once agreed.
 
 ## 5. What Can Start Right Now (for teammates)
 
-Phase 1 is done (pending review), so **Phase 2 can start now**. Beyond that, these are also unblocked:
+Phases 1 and 2 are done (pending review), so **Phases 3 and 4 (model training) can start now**. These are also unblocked:
 
 | Teammate could start… | Why it's unblocked |
 |---|---|
 | **Phase 7:** prompt templates, persona design, LLM provider setup | Only needs the JSON shape `{city, date, temp_max, prob, risk, severity}`, which the plan already defines |
 | **Phase 6:** HTML/CSS layout, Leaflet map, charts with mock data | Needs only the API contract from the plan |
 | **Phase 5:** Flask skeleton and `/api/cities`, `/api/history`, `/api/analytics/decades` | These only read the raw data, no models needed |
-| **Phase 3:** write the evaluation-metrics helper and model-training scaffolding | Can be tested on dummy data until Phase 2 lands |
+| **Phase 3:** baselines and the evaluation helper | `data/model_ready_dataset.csv` and `feature_schema.json` are ready |
 
-**Blocked until Phase 2 is finished:** actual model training (Phases 3–4) and real `/api/predict`.
+**Blocked until Phase 4 is finished:** the real `/api/predict` (needs the saved models).
 
 ---
 
@@ -216,6 +248,7 @@ Newest entries first. Format: `date — name — what was done`.
 
 | Date | Who | What |
 |---|---|---|
+| 2026-10-04 | Anvita | Phase 2 done: wrote `preprocessing/feature_engineering.py`, generated `data/model_ready_dataset.csv` (187,022 rows, 45 features, 0 nulls), `feature_schema.json` and `feature_report.json`. 12 leakage checks pass. Needs teammate review. |
 | 2026-10-04 | Anvita | Phase 1 done: wrote `preprocessing/data_cleaner.py`, generated `data/heatguard_clean.csv` (187,387 rows, 0 nulls) and `data/cleaning_report.json`. All 9 validation checks pass. Needs teammate review. |
 | 2026-10-04 | Anvita | Reviewed implementation plan and raw dataset, verified profiling numbers, created this progress tracker. |
 
@@ -227,4 +260,5 @@ Newest entries first. Format: `date — name — what was done`.
 - [ ] Which LLM provider for the advisory/chatbot (Gemini / OpenAI / Anthropic / Hugging Face)
 - [x] How to treat suspicious values: decided in Phase 1 (see table). Teammates can still challenge it in review.
 - [ ] Whether to attempt stretch models (TFT, Chronos, TimesFM) or stop at LightGBM/CatBoost
+- [ ] Confirm the two extra features `threshold_next_day` and `gap_to_next_threshold` (Phase 2 addition)
 - [ ] Git workflow: branch per person + pull requests, or commit directly to `main`

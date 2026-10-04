@@ -1,0 +1,66 @@
+{
+  "rows_in": 187387,
+  "rows_dropped_no_7day_history": 318,
+  "rows_dropped_no_valid_next_day_target": 47,
+  "rows_out": 187022,
+  "rows_dropped_total": 365,
+  "leakage_and_correctness_checks": {
+    "no_forbidden_columns_in_features": true,
+    "no_target_columns_in_features": true,
+    "no_nulls_in_features": true,
+    "no_nulls_in_targets": true,
+    "lags_match_independent_lookup": true,
+    "rolling_windows_match_independent_lookup": true,
+    "targets_match_next_day_lookup": true,
+    "heatwave_streak_matches_walk_back": true,
+    "target_date_is_t_plus_1": true,
+    "split_is_chronological": true,
+    "departure_target_matches_severity_target": true,
+    "heatwave_target_matches_departure_target": true
+  },
+  "split_summary": {
+    "test": {
+      "rows": 8120,
+      "heatwave_next_day": 265,
+      "positive_rate_pct": 3.264,
+      "first_target": "2021-01-01",
+      "last_target": "2024-06-21"
+    },
+    "train": {
+      "rows": 166131,
+      "heatwave_next_day": 1395,
+      "positive_rate_pct": 0.84,
+      "first_target": "1951-01-09",
+      "last_target": "2015-12-31"
+    },
+    "val": {
+      "rows": 12771,
+      "heatwave_next_day": 125,
+      "positive_rate_pct": 0.979,
+      "first_target": "2016-01-01",
+      "last_target": "2020-12-31"
+    }
+  },
+  "severity_target_counts_by_split": {
+    "test": {
+      "Normal": 7855,
+      "Warning": 229,
+      "Severe": 34,
+      "Extreme": 2
+    },
+    "train": {
+      "Normal": 164736,
+      "Warning": 1310,
+      "Severe": 85
+    },
+    "val": {
+      "Normal": 12646,
+      "Warning": 118,
+      "Severe": 7
+    }
+  },
+  "n_features": 45,
+  "persistence_sanity": {
+    "p_hw_next_given_hw_today_pct": 63.15
+  }
+}

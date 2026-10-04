@@ -1,0 +1,4 @@
+# regenerable from preprocessing scripts (~59 MB) - do not commit
+data/model_ready_dataset.csv
+__pycache__/
+*.pyc
