@@ -387,26 +387,48 @@ The HeatGuard AI backend is built using Flask, organizing services into modular 
 HeatGuard-AI/
 ├── app.py                          # Flask entrypoint & route controllers
 ├── requirements.txt                # Production dependencies
+├── README.md                       # Comprehensive project guide & viva cheat sheet
+├── progress.md                     # Team progress tracker & work log
+├── HeatGuard_AI_Implementation_Plan_Dataset_Specific.md # Architectural plan
 │
 ├── data/
-│   ├── heatguard_clean.csv         # Raw 74-year dataset
-│   └── model_ready_dataset.csv     # Preprocessed dataset with lag features
+│   ├── heatguard_raw.csv           # Ingested 74-year daily dataset
+│   ├── heatguard_clean.csv         # Cleaned dataset (187,387 rows, 0 nulls, 40 segments)
+│   ├── model_ready_dataset.csv     # Feature matrix (187,022 rows x 45 features)
+│   ├── feature_schema.json         # Feature definitions & meta schema
+│   ├── cleaning_report.json        # Data cleaning validation report
+│   ├── baseline_metrics.json       # Scientific baselines evaluation metrics
+│   ├── baseline_report.md          # Baseline performance report
+│   ├── hybrid_metrics.json         # Two-stage hybrid evaluation metrics
+│   └── hybrid_report.md            # Two-stage hybrid performance report
+│
+├── data_cleaning/
+│   ├── Data_cleaner.py             # Calendar reindexing & missingness pipeline
+│   └── feature_eng.py              # Zero-leakage 45-feature engineering pipeline
 │
 ├── models/
-│   ├── heatwave_lgbm_model.pkl     # Primary LightGBM classifier
-│   ├── departure_regressor.pkl     # Continuous temperature departure regressor
-│   ├── baseline_rf_model.pkl       # Random Forest baseline model
-│   ├── feature_scaler.pkl          # Numerical scaler
-│   └── model_metadata.json         # Evaluation metrics & feature schemas
+│   ├── evaluate.py                 # Evaluation metrics & threshold tuning
+│   ├── train_baselines.py          # Persistence, LogReg & LightGBM Forest
+│   ├── hybrid_engine.py            # TwoStageHeatwavePredictor production pipeline
+│   ├── train_hybrid.py             # Two-stage hybrid training & isotonic calibration
+│   └── saved/
+│       ├── hybrid_predictor.pkl    # Serialized production pipeline
+│       ├── departure_regressor.pkl # Stage 1 continuous Huber regressor
+│       ├── lgbm_classifier.pkl     # Stage 2 calibrated classifier
+│       ├── persistence_baseline.pkl# Baseline 1
+│       ├── logreg_baseline.pkl     # Baseline 2
+│       ├── rf_baseline.pkl         # Baseline 3
+│       ├── scaler.pkl              # Feature standardizer
+│       └── model_metadata.json     # Feature list & training parameters
 │
-├── preprocessing/
-│   ├── feature_engineering.py      # Zero-leakage lag & rolling pipeline
-│   └── data_cleaner.py             # Calendar reindexing & missingness handler
+├── notebooks/
+│   ├── 03_baseline_models.ipynb    # Interactive baseline modeling notebook
+│   └── 04_two_stage_hybrid_engine.ipynb # Interactive two-stage hybrid notebook
 │
 ├── services/
-│   ├── prediction_service.py       # Two-stage ML inference pipeline
-│   ├── genai_service.py            # Persona advisory & chat grounding
-│   └── analytics_service.py        # 74-year climate trends & decadal analytics
+│   ├── prediction_service.py       # Live lag feature builder & model inference
+│   ├── analytics_service.py        # 74-year climate trends & decadal analytics
+│   └── genai_service.py            # Persona advisory & chat grounding
 │
 ├── templates/
 │   ├── index.html                  # Landing page
@@ -470,28 +492,27 @@ gantt
     title HeatGuard AI Development Sequence
     dateFormat  YYYY-MM-DD
     section Phase 1 & 2
-    Data Preprocessing & Calendar Pipeline :done, p1, 2026-10-05, 1d
+    Data Preprocessing & Calendar Pipeline :done, p1, 2026-10-04, 1d
     Zero-Leakage Feature Engineering        :done, p2, after p1, 1d
     section Phase 3 & 4
-    Baseline Models (Persistence, LogReg, RF) :active, p3, after p2, 1d
-    LightGBM & CatBoost Focal Loss Tuning   :active, p4, after p3, 1d
-    Two-Stage Hybrid Engine Integration      :p5, after p4, 1d
+    Baseline Models (Persistence, LogReg, RF) :done, p3, after p2, 1d
+    Two-Stage Hybrid Engine (LightGBM)       :done, p4, after p3, 1d
     section Phase 5 & 6
-    Flask REST Backend Services              :p6, after p5, 1d
-    Glassmorphism Dashboard & Leaflet Map   :p7, after p6, 2d
+    Flask REST Backend Services              :active, p5, after p4, 1d
+    Glassmorphism Dashboard & Leaflet Map   :p6, after p5, 1d
     section Phase 7 & 8
-    GenAI Grounding & Chatbot Module        :p8, after p7, 1d
-    Full System Verification & Demo Run     :p9, after p8, 1d
+    GenAI Grounding & Chatbot Module        :p7, after p6, 1d
+    Full System Verification & Demo Run     :p8, after p7, 1d
 ```
 
-### Key Deliverables:
-1. `preprocessing/feature_engineering.py` — Continuous calendar lag generator.
-2. `data/model_ready_dataset.csv` — Feature-engineered dataset ready for modeling.
-3. `models/train_models.py` — Benchmark script evaluating Baselines vs LightGBM vs Chronos.
-4. `models/heatwave_lgbm_model.pkl` & `departure_regressor.pkl` — Serialized production models.
-5. `app.py` & `services/` — Production Flask backend and API endpoints.
-6. `templates/` & `static/` — Production web application with Leaflet map, Chart.js visuals, and GenAI advisory studio.
-7. `heatguard_evaluation_report.md` — Formal benchmarking metrics and PR-AUC/ROC evaluation curves.
+### Key Deliverables & Verified Artifacts:
+1. `data_cleaning/Data_cleaner.py` & `data/heatguard_clean.csv` — Cleaned 74-year dataset (187,387 rows, 0 nulls, 40 segmented calendar gaps).
+2. `data_cleaning/feature_eng.py` & `data/model_ready_dataset.csv` — Feature-engineered matrix (187,022 rows x 45 features, 12 leakage tests passed).
+3. `models/evaluate.py` — Evaluation engine with PR-AUC, ROC-AUC, F1, Accuracy (97.68%), Balanced Accuracy (84.40%), and Brier score.
+4. `models/train_baselines.py` & `notebooks/03_baseline_models.ipynb` — Classical benchmarks (Persistence, Balanced LogReg, LightGBM Forest).
+5. `models/hybrid_engine.py` & `models/train_hybrid.py` — Production Two-Stage Hybrid Engine (Huber Regressor + Isotonic Calibrated Classifier).
+6. `models/saved/hybrid_predictor.pkl` & `models/saved/model_metadata.json` — Serialized production model ready for Flask backend inference.
+7. `data/hybrid_report.md` & `data/baseline_report.md` — Formal benchmarking metrics and evaluation reports.
 
 ---
 
