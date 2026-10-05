@@ -12,8 +12,21 @@ by learning continuous thermal dynamics across 100% of samples (187k continuous 
 from __future__ import annotations
 
 import json
+import sys
+import types
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+# Windows Application Control / environment safety guard for unused binary C-extensions
+for _mod in [
+    "scipy.integrate._vode",
+    "_vode",
+    "sklearn.svm._libsvm",
+    "sklearn.svm._liblinear",
+    "sklearn.svm._libsvm_sparse",
+]:
+    if _mod not in sys.modules:
+        sys.modules[_mod] = types.ModuleType(_mod)
 
 import joblib
 import lightgbm as lgb
