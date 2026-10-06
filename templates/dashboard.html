@@ -43,7 +43,7 @@
   <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">Curated Scenarios:</span>
   {% for p in presets %}
   <button class="preset-chip" data-city="{{ p.city }}" data-date="{{ p.date }}" title="{{ p.description }}">
-    <span class="chip-tag" style="background: {{ p.color }}33; color: {{ p.color }}; border: 1px solid {{ p.color }}66;">{{ p.badge }}</span>
+    <span class="chip-tag" data-color="{{ p.color }}">{{ p.badge }}</span>
     <span>{{ p.label }}</span>
   </button>
   {% endfor %}
@@ -241,8 +241,133 @@
     <canvas id="trajectory-chart"></canvas>
   </div>
 </section>
+
+<!-- Advanced Climate Stress Simulator Section -->
+<section class="glass-card simulator-card" style="margin-top: 1.5rem;">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">
+        <i data-feather="cpu" style="color:var(--neon-blue);"></i>
+        <span>Counterfactual Climate Stress Simulator (What-If Analysis)</span>
+      </h2>
+      <div class="card-subtitle">
+        Perturb atmospheric temperature and rainfall conditions to observe non-linear risk shifts in the Two-Stage Hybrid Model
+      </div>
+    </div>
+    <div style="display:flex; gap:0.5rem; align-items:center;">
+      <button id="dispatch-alert-btn" class="btn btn-outline" style="font-size:0.78rem; padding:0.4rem 0.85rem;" title="Simulate municipal emergency dispatch broadcast">
+        <i data-feather="send" style="width:13px;height:13px; color:var(--neon-blue);"></i>
+        <span>Broadcast Emergency Alert</span>
+      </button>
+      <span class="badge" style="background:rgba(0,240,255,0.12); color:#00f0ff; border:1px solid rgba(0,240,255,0.4);">
+        <i data-feather="sliders" style="width:12px;height:12px;"></i> Live In-Silico ML
+      </span>
+    </div>
+  </div>
+
+  <div class="slider-container">
+    <!-- Slider 1: Ambient Temperature Shift -->
+    <div class="slider-box">
+      <div class="slider-header">
+        <span style="color:var(--text-secondary);"><i data-feather="thermometer" style="width:13px;height:13px;color:var(--neon-blue);"></i> Ambient Temp Shock</span>
+        <span id="slider-temp-badge" class="slider-val-badge">+1.5°C</span>
+      </div>
+      <input type="range" id="sim-temp-offset" class="cyber-slider" min="-3.0" max="5.0" step="0.5" value="1.5">
+      <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-top:0.4rem;">
+        <span>-3.0°C (Cooling)</span>
+        <span>0.0°C</span>
+        <span>+5.0°C (Severe Surge)</span>
+      </div>
+    </div>
+
+    <!-- Slider 2: Nighttime Min Temp Shift -->
+    <div class="slider-box">
+      <div class="slider-header">
+        <span style="color:var(--text-secondary);"><i data-feather="moon" style="width:13px;height:13px;color:var(--neon-blue);"></i> Nighttime Heat Retention</span>
+        <span id="slider-night-badge" class="slider-val-badge">+1.0°C</span>
+      </div>
+      <input type="range" id="sim-night-offset" class="cyber-slider" min="0.0" max="4.0" step="0.5" value="1.0">
+      <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-top:0.4rem;">
+        <span>0.0°C (Normal Night)</span>
+        <span>+2.0°C</span>
+        <span>+4.0°C (Acute Retention)</span>
+      </div>
+    </div>
+
+    <!-- Slider 3: Rainfall Anomaly -->
+    <div class="slider-box">
+      <div class="slider-header">
+        <span style="color:var(--text-secondary);"><i data-feather="cloud-drizzle" style="width:13px;height:13px;color:var(--neon-blue);"></i> Rainfall Anomaly</span>
+        <span id="slider-rain-badge" class="slider-val-badge">-5.0 mm</span>
+      </div>
+      <input type="range" id="sim-rain-offset" class="cyber-slider" min="-10.0" max="20.0" step="1.0" value="-5.0">
+      <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-top:0.4rem;">
+        <span>-10 mm (Dry Spurt)</span>
+        <span>0 mm</span>
+        <span>+20 mm (Pre-Monsoon Shower)</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
+    <button id="run-simulation-btn" class="btn btn-primary" style="padding:0.7rem 1.6rem;">
+      <i data-feather="activity"></i>
+      <span>Run Stress Simulation</span>
+    </button>
+    <div id="sim-status-msg" style="font-size:0.8rem; color:var(--neon-blue); font-weight:600;">
+      Adjust sliders and click Run to test climate shock resilience.
+    </div>
+  </div>
+
+  <!-- Simulation Output Comparison Grid -->
+  <div class="sim-output-grid" id="sim-output-panel" style="display:none;">
+    <!-- Baseline Output -->
+    <div class="sim-box" style="border-left: 3px solid #64748b;">
+      <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; margin-bottom:0.4rem;">
+        Baseline Model Output
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+        <span style="color:var(--text-secondary); font-size:0.85rem;">Predicted Max:</span>
+        <strong id="sim-base-temp" style="color:#fff;">--.-°C</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+        <span style="color:var(--text-secondary); font-size:0.85rem;">Heatwave Probability:</span>
+        <strong id="sim-base-prob">--.-%</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between;">
+        <span style="color:var(--text-secondary); font-size:0.85rem;">Severity:</span>
+        <span id="sim-base-badge" class="badge badge-normal">--</span>
+      </div>
+    </div>
+
+    <!-- Simulated Shock Output -->
+    <div class="sim-box" style="border-left: 3px solid var(--neon-blue);">
+      <div style="font-size:0.75rem; text-transform:uppercase; color:var(--neon-blue); font-weight:700; margin-bottom:0.4rem;">
+        Simulated Stress Scenario
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+        <span style="color:var(--text-secondary); font-size:0.85rem;">Simulated Max:</span>
+        <strong id="sim-shock-temp" style="color:var(--neon-blue);">--.-°C</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
+        <span style="color:var(--text-secondary); font-size:0.85rem;">Simulated Probability:</span>
+        <strong id="sim-shock-prob" style="color:#fb923c;">--.-%</strong>
+      </div>
+      <div style="display:flex; justify-content:space-between;">
+        <span style="color:var(--text-secondary); font-size:0.85rem;">Simulated Severity:</span>
+        <span id="sim-shock-badge" class="badge badge-warning">--</span>
+      </div>
+    </div>
+
+    <!-- Scientific Takeaway Footer -->
+    <div style="grid-column: 1 / -1; background:rgba(0,240,255,0.06); border:1px solid rgba(0,240,255,0.25); border-radius:var(--radius-sm); padding:0.75rem 1rem; font-size:0.82rem; color:#bae6fd;">
+      <i data-feather="info" style="width:14px;height:14px; color:var(--neon-blue); vertical-align:middle; margin-right:4px;"></i>
+      <span id="sim-takeaway-text">Takeaway text will appear here.</span>
+    </div>
+  </div>
+</section>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=2.1"></script>
 {% endblock %}

@@ -34,17 +34,17 @@ async function loadDecadalChart() {
           {
             label: "Total Heatwave Days",
             data: data.total_heatwave_days,
-            backgroundColor: data.labels.map(l => l.includes("2020") ? "#f97316" : "rgba(249, 115, 22, 0.6)"),
-            borderColor: "#f97316",
-            borderWidth: 1.5,
+            backgroundColor: data.labels.map(l => l.includes("2020") ? "rgba(249, 115, 22, 0.85)" : "rgba(0, 240, 255, 0.65)"),
+            borderColor: data.labels.map(l => l.includes("2020") ? "#f97316" : "#00f0ff"),
+            borderWidth: 1.8,
             borderRadius: 6,
           },
           {
             label: "Severe Heatwave Days",
             data: data.severe_heatwave_days,
-            backgroundColor: data.labels.map(l => l.includes("2020") ? "#ef4444" : "rgba(239, 68, 68, 0.6)"),
+            backgroundColor: data.labels.map(l => l.includes("2020") ? "rgba(239, 68, 68, 0.85)" : "rgba(239, 68, 68, 0.5)"),
             borderColor: "#ef4444",
-            borderWidth: 1.5,
+            borderWidth: 1.8,
             borderRadius: 6,
           }
         ]
@@ -55,18 +55,22 @@ async function loadDecadalChart() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: "rgba(13, 19, 34, 0.95)",
-            padding: 10,
+            backgroundColor: "rgba(3, 7, 18, 0.95)",
+            titleColor: "#00f0ff",
+            bodyColor: "#f8fafc",
+            borderColor: "rgba(0, 240, 255, 0.4)",
+            borderWidth: 1,
+            padding: 11,
             cornerRadius: 8,
           }
         },
         scales: {
           x: {
-            grid: { color: "rgba(255, 255, 255, 0.05)" },
+            grid: { color: "rgba(0, 240, 255, 0.06)" },
             ticks: { color: "#94a3b8" }
           },
           y: {
-            grid: { color: "rgba(255, 255, 255, 0.05)" },
+            grid: { color: "rgba(0, 240, 255, 0.06)" },
             ticks: { color: "#94a3b8" },
             title: { display: true, text: "Number of Days", color: "#64748b" }
           }
@@ -181,11 +185,15 @@ async function loadMonthlyChart() {
             type: "line",
             label: "Average Max Temp (°C)",
             data: data.avg_max_temp,
-            borderColor: "#06b6d4",
-            backgroundColor: "rgba(6, 182, 212, 0.1)",
-            borderWidth: 2.5,
+            borderColor: "#00f0ff",
+            backgroundColor: "rgba(0, 240, 255, 0.15)",
+            borderWidth: 2.8,
             tension: 0.35,
-            pointRadius: 4,
+            pointBackgroundColor: "#00f0ff",
+            pointBorderColor: "#fff",
+            pointBorderWidth: 1.5,
+            pointRadius: 5,
+            pointHoverRadius: 8,
             yAxisID: "y1",
           }
         ]
@@ -195,24 +203,28 @@ async function loadMonthlyChart() {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            labels: { color: "#cbd5e1", font: { size: 11 } }
+            labels: { color: "#e0f2fe", font: { size: 11, weight: "bold" } }
           },
           tooltip: {
-            backgroundColor: "rgba(13, 19, 34, 0.95)",
-            padding: 10,
+            backgroundColor: "rgba(3, 7, 18, 0.95)",
+            titleColor: "#00f0ff",
+            bodyColor: "#f8fafc",
+            borderColor: "rgba(0, 240, 255, 0.4)",
+            borderWidth: 1,
+            padding: 11,
             cornerRadius: 8,
           }
         },
         scales: {
           x: {
-            grid: { color: "rgba(255, 255, 255, 0.05)" },
+            grid: { color: "rgba(0, 240, 255, 0.06)" },
             ticks: { color: "#94a3b8" }
           },
           y: {
             type: "linear",
             display: true,
             position: "left",
-            grid: { color: "rgba(255, 255, 255, 0.05)" },
+            grid: { color: "rgba(0, 240, 255, 0.06)" },
             ticks: { color: "#94a3b8" },
             title: { display: true, text: "Heatwave Days", color: "#f97316" }
           },
@@ -222,10 +234,10 @@ async function loadMonthlyChart() {
             position: "right",
             grid: { drawOnChartArea: false },
             ticks: {
-              color: "#94a3b8",
+              color: "#00f0ff",
               callback: (val) => `${val}°C`
             },
-            title: { display: true, text: "Avg Temp (°C)", color: "#06b6d4" }
+            title: { display: true, text: "Avg Temp (°C)", color: "#00f0ff" }
           }
         }
       }

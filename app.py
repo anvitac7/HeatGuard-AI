@@ -314,6 +314,121 @@ def api_analytics_persistence():
 
 
 # ----------------------------------------------------------------------------------------
+# Advanced REST API Endpoints: Climate Stress Simulator & Forecasting
+# ----------------------------------------------------------------------------------------
+@app.route("/api/simulate", methods=["POST"])
+def api_simulate():
+    """
+    Counterfactual climate stress simulation:
+    Payload: {
+        "city": "Ahmedabad",
+        "date": "2024-05-23",
+        "temp_offset": 2.0,
+        "night_temp_offset": 1.5,
+        "rain_offset": -5.0
+    }
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    city = data.get("city", "Delhi")
+    date_str = data.get("date", "2024-05-28")
+    temp_offset = float(data.get("temp_offset", 0.0))
+    night_temp_offset = float(data.get("night_temp_offset", 0.0))
+    rain_offset = float(data.get("rain_offset", 0.0))
+
+    pred_svc = get_prediction_service()
+    try:
+        sim = pred_svc.simulate_scenario(
+            city=city,
+            date_str=date_str,
+            temp_offset=temp_offset,
+            night_temp_offset=night_temp_offset,
+            rain_offset=rain_offset,
+        )
+        return jsonify({"status": "success", "simulation": sim})
+    except Exception as e:
+        log.error("Simulation error: %s", e, exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+@app.route("/api/forecast/<city>", methods=["GET"])
+def api_forecast(city: str):
+    """
+    Autoregressive multi-horizon forecast (1 to 7 days forward).
+    Query params: ?date=2024-05-28&days=7
+    """
+    date_str = request.args.get("date", "2024-05-28")
+    days = int(request.args.get("days", 7))
+    pred_svc = get_prediction_service()
+    try:
+        fc = pred_svc.forecast_multi_day(city, date_str, days=days)
+        return jsonify({"status": "success", "forecast": fc})
+    except Exception as e:
+        log.error("Multi-day forecast error: %s", e, exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+@app.route("/api/alerts/dispatch", methods=["POST"])
+def api_dispatch_alert():
+    """
+    Simulates sending instant emergency alerts via SMS / Municipal radio / Public sirens.
+    Payload: {"city": "Ahmedabad", "date": "2024-05-23", "channels": ["SMS", "Hospital_Surge", "Radio"]}
+    """
+    data = request.get_json(force=True, silent=True) or {}
+    city = data.get("city", "Ahmedabad")
+    date_str = data.get("date", "2024-05-23")
+    channels = data.get("channels", ["Municipal_Disaster_Cell", "SMS_Broadcast", "Hospital_Trauma_Units"])
+
+    pred_svc = get_prediction_service()
+    try:
+        pred_res = pred_svc.predict_city(city, date_str)
+        pred = pred_res["prediction"]
+
+        import uuid, datetime
+        dispatch_receipt = {
+            "dispatch_id": f"HG-DISP-{uuid.uuid4().hex[:8].upper()}",
+            "timestamp": datetime.datetime.now().isoformat(),
+            "target_city": city,
+            "forecast_date": pred_res["target_date"],
+            "risk_level": pred["risk_level"],
+            "severity": pred["severity"],
+            "predicted_temp": pred["predicted_temp_max"],
+            "channels_broadcast": channels,
+            "status": "DISPATCHED",
+            "message": f"[HEAT EMERGENCY] HeatGuard AI alert for {city}: {pred['predicted_temp_max']}°C predicted. Risk: {pred['risk_level']}."
+        }
+        return jsonify({"status": "success", "receipt": dispatch_receipt})
+    except Exception as e:
+        log.error("Dispatch alert error: %s", e, exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 400
+
+
+@app.route("/api/health", methods=["GET"])
+def api_health():
+    """System health, loaded model status, and telemetry."""
+    pred_svc = get_prediction_service()
+    status = pred_svc.get_health_status()
+    return jsonify({"status": "success", "health": status})
+
+
+@app.route("/api/export/<city>", methods=["GET"])
+def api_export_city(city: str):
+    """Exports historical city weather records as CSV."""
+    from flask import Response
+    pred_svc = get_prediction_service()
+    if city not in pred_svc.city_dfs:
+        return jsonify({"status": "error", "message": f"Unknown city {city}"}), 404
+
+    df_city = pred_svc.city_dfs[city].copy()
+    csv_data = df_city.to_csv(index=False)
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment;filename=HeatGuard_{city}_1951_2024.csv"}
+    )
+
+
+
+# ----------------------------------------------------------------------------------------
 # Application Startup
 # ----------------------------------------------------------------------------------------
 if __name__ == "__main__":
