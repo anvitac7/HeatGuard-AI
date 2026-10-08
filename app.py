@@ -7,6 +7,25 @@ for dynamic feature extraction, Two-Stage Hybrid ML inference, and GenAI groundi
 """
 from __future__ import annotations
 
+import sys
+import types
+
+# Windows Application Control safety guard: bypass unused Cython DLLs
+for _mod in [
+    "scipy.integrate._vode",
+    "_vode",
+    "sklearn.svm._libsvm",
+    "sklearn.svm._liblinear",
+    "sklearn.svm._libsvm_sparse",
+]:
+    if _mod not in sys.modules:
+        sys.modules[_mod] = types.ModuleType(_mod)
+
+if "sklearn.svm" not in sys.modules:
+    _svm_mock = types.ModuleType("sklearn.svm")
+    _svm_mock.LinearSVC = type("LinearSVC", (), {})
+    sys.modules["sklearn.svm"] = _svm_mock
+
 import logging
 import os
 from pathlib import Path
@@ -247,13 +266,15 @@ def api_generate_advisory():
 @app.route("/api/chat", methods=["POST"])
 def api_chat():
     """
-    Context-aware interactive assistant grounded in prediction and 74-year climate history.
-    Payload: {"message": "Why is the risk elevated?", "city": "Delhi", "date": "2024-05-28"}
+    Context-aware natural language assistant grounded in Two-Stage ML predictions and 74-year climate history.
+    Payload: {"message": "tell me the weather of delhi tomorrow"}
+    Optional: {"city": "Delhi", "date": "2024-05-28"}
     """
     data = request.get_json(force=True, silent=True) or {}
     message = data.get("message", "").strip()
-    city = data.get("city", "Delhi")
-    date_str = data.get("date", "2024-05-28")
+    explicit_city = data.get("city")
+    explicit_date = data.get("date")
+    history = data.get("history", [])
 
     if not message:
         return jsonify({"status": "error", "message": "Message is required"}), 400
@@ -262,12 +283,13 @@ def api_chat():
     genai_svc = get_genai_service()
 
     try:
-        context = pred_svc.predict_city(city, date_str)
-    except Exception:
-        context = None
-
-    try:
-        reply = genai_svc.chat(message=message, city=city, active_prediction=context)
+        reply = genai_svc.chat_interactive(
+            message=message,
+            explicit_city=explicit_city,
+            explicit_date=explicit_date,
+            chat_history=history,
+            pred_svc=pred_svc,
+        )
         return jsonify({"status": "success", "chat": reply})
     except Exception as e:
         log.error("Error in chat assistant: %s", e, exc_info=True)

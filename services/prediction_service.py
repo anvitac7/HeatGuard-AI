@@ -96,13 +96,18 @@ class PredictionService:
         self.df.sort_values(["city", "date"], inplace=True)
         self.df.reset_index(drop=True, inplace=True)
 
-        # Build fast lookup indexes per city
+        # Build fast lookup indexes and 74-year climatology benchmark per city
         self.city_dfs: Dict[str, pd.DataFrame] = {}
         self.city_date_sets: Dict[str, set] = {}
+        self.city_climatology: Dict[str, Dict[str, Any]] = {}
         for c in CITIES:
             sub = self.df[self.df["city"] == c].copy().reset_index(drop=True)
             self.city_dfs[c] = sub
             self.city_date_sets[c] = set(sub["date_str"].values)
+            self.city_climatology[c] = {
+                "all_time_peak": round(float(sub["temp_max"].max()), 1),
+                "total_heatwave_days": int(sub["is_heatwave_day"].sum()),
+            }
 
         log.info("Loading TwoStageHeatwavePredictor from %s...", MODEL_PATH)
         self.predictor = TwoStageHeatwavePredictor.load(MODEL_PATH)
@@ -260,6 +265,7 @@ class PredictionService:
         for s in SEASONS:
             feat[f"season_{s}"] = int(t_row["season"] == s)
 
+        climatology = self.city_climatology.get(city, {"all_time_peak": 45.0, "total_heatwave_days": 0})
         # Context metadata
         context = {
             "city": city,
@@ -274,6 +280,8 @@ class PredictionService:
             "temp_max_7d_avg": round(t_max_7d_avg, 2),
             "heatwave_streak_days": streak,
             "is_heatwave_today": int(t_row["is_heatwave_day"]),
+            "historical_peak": climatology["all_time_peak"],
+            "total_historical_hw_days": climatology["total_heatwave_days"],
             "rain": round(cur_rain, 2),
             "rain_is_recorded": int(t_row["rain_is_recorded"]),
             "latitude": CITY_COORDINATES[city]["lat"],

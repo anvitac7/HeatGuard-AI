@@ -1,13 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %}HeatGuard AI — Command Center & Heatwave Prediction{% endblock %}
+{% block title %}HeatGuard AI — Operational Command Center & Heatwave Prediction{% endblock %}
 
 {% block content %}
-<!-- Control Bar -->
+<!-- Executive Control & Filter Toolbar -->
 <section class="control-bar">
   <div class="control-group">
     <div class="control-item">
-      <label class="control-label" for="city-select"><i data-feather="map-pin" style="width:14px;height:14px;"></i> City</label>
+      <label class="control-label" for="city-select">
+        <i data-feather="map-pin" style="width:14px;height:14px;color:var(--brand-600);"></i>
+        <span>Target City:</span>
+      </label>
       <select id="city-select" class="select-input">
         {% for c in cities %}
         <option value="{{ c.city }}" {% if c.city == 'Delhi' %}selected{% endif %}>
@@ -18,29 +21,32 @@
     </div>
 
     <div class="control-item">
-      <label class="control-label" for="date-select"><i data-feather="calendar" style="width:14px;height:14px;"></i> Observation Date</label>
+      <label class="control-label" for="date-select">
+        <i data-feather="calendar" style="width:14px;height:14px;color:var(--brand-600);"></i>
+        <span>Observation Date:</span>
+      </label>
       <input type="date" id="date-select" class="date-input" value="2024-05-28" min="1951-01-08" max="2024-06-21">
     </div>
 
     <button id="run-predict-btn" class="btn btn-primary">
-      <i data-feather="zap"></i>
-      <span>Run Prediction</span>
+      <i data-feather="zap" style="width:15px;height:15px;"></i>
+      <span>Run Next-Day Inference</span>
     </button>
   </div>
 
   <div class="control-group">
     <div class="control-item">
-      <span style="font-size:0.8rem; color:var(--text-muted);">Quick View:</span>
-      <button class="btn btn-outline" style="padding:0.4rem 0.85rem; font-size:0.78rem;" id="refresh-all-btn">
-        <i data-feather="refresh-cw" style="width:13px;height:13px;"></i> Sync All 7 Cities
+      <button class="btn btn-outline" style="padding:0.45rem 0.85rem; font-size:0.8rem;" id="refresh-all-btn">
+        <i data-feather="refresh-cw" style="width:13px;height:13px;"></i>
+        <span>Synchronize All 7 Metros</span>
       </button>
     </div>
   </div>
 </section>
 
-<!-- Preset Historical Scenarios -->
+<!-- Curated Historical Scenario Chips -->
 <div class="presets-container">
-  <span style="font-size:0.75rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">Curated Scenarios:</span>
+  <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">Curated Benchmark Scenarios:</span>
   {% for p in presets %}
   <button class="preset-chip" data-city="{{ p.city }}" data-date="{{ p.date }}" title="{{ p.description }}">
     <span class="chip-tag" data-color="{{ p.color }}">{{ p.badge }}</span>
@@ -49,13 +55,13 @@
   {% endfor %}
 </div>
 
-<!-- KPI Metrics Grid -->
+<!-- Executive KPI Metrics Grid -->
 <section class="kpi-grid">
-  <!-- KPI 1: Current Temperature & Departure -->
-  <div class="glass-card kpi-card">
+  <!-- KPI 1: Observed Current Temperature vs Climatological Threshold -->
+  <div class="kpi-card">
     <div class="kpi-label">
-      <span>Observed Day t Max Temp</span>
-      <i data-feather="thermometer" style="color:var(--accent-orange); width:16px;height:16px;"></i>
+      <span>Day t Observed Maximum</span>
+      <i data-feather="thermometer" style="color:var(--risk-warning); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
       <span id="kpi-current-temp" class="kpi-value">--.-</span>
@@ -68,27 +74,27 @@
     </div>
   </div>
 
-  <!-- KPI 2: 3-Day Moving Average & Trend -->
-  <div class="glass-card kpi-card">
+  <!-- KPI 2: 3-Day Moving Average & Momentum -->
+  <div class="kpi-card">
     <div class="kpi-label">
       <span>3-Day Moving Average</span>
-      <i data-feather="trending-up" style="color:var(--color-extreme); width:16px;height:16px;"></i>
+      <i data-feather="trending-up" style="color:var(--brand-600); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
       <span id="kpi-3d-avg" class="kpi-value">--.-</span>
       <span class="kpi-unit">°C</span>
     </div>
     <div class="kpi-subtext">
-      <i data-feather="arrow-up-right" id="kpi-trend-icon" style="width:14px;height:14px;color:var(--accent-orange);"></i>
+      <i data-feather="arrow-up-right" id="kpi-trend-icon" style="width:14px;height:14px;color:var(--risk-warning);"></i>
       <span id="kpi-trend-text">Calculating thermal momentum...</span>
     </div>
   </div>
 
   <!-- KPI 3: Heatwave Streak & Precipitation -->
-  <div class="glass-card kpi-card">
+  <div class="kpi-card">
     <div class="kpi-label">
       <span>Heatwave Streak</span>
-      <i data-feather="flame" style="color:var(--color-severe); width:16px;height:16px;"></i>
+      <i data-feather="flame" style="color:var(--risk-severe); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
       <span id="kpi-streak" class="kpi-value">0</span>
@@ -96,21 +102,21 @@
       <span id="kpi-status-badge" class="badge badge-normal" style="margin-left:auto;">Normal</span>
     </div>
     <div class="kpi-subtext">
-      <span>Daily Rain:</span>
+      <span>Precipitation Today:</span>
       <strong id="kpi-rain" style="color:var(--text-primary);">0.0 mm</strong>
     </div>
   </div>
 
-  <!-- KPI 4: 74-Year City Benchmark -->
-  <div class="glass-card kpi-card">
+  <!-- KPI 4: 74-Year Historical Benchmark -->
+  <div class="kpi-card">
     <div class="kpi-label">
-      <span>Historical Climatology</span>
-      <i data-feather="clock" style="color:var(--color-cyan); width:16px;height:16px;"></i>
+      <span>74-Year Climatology Peak</span>
+      <i data-feather="clock" style="color:var(--text-muted); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
       <span id="kpi-historical-peak" class="kpi-value">--.-</span>
       <span class="kpi-unit">°C</span>
-      <span class="badge" style="background:rgba(6,182,212,0.15); color:#22d3ee; border:1px solid rgba(6,182,212,0.4); margin-left:auto;">Peak</span>
+      <span class="badge" style="background:var(--brand-50); color:var(--brand-600); border:1px solid var(--brand-100); margin-left:auto;">All-Time</span>
     </div>
     <div class="kpi-subtext">
       <span id="kpi-total-hw">Total historical heatwave days: --</span>
@@ -118,48 +124,62 @@
   </div>
 </section>
 
-<!-- Dashboard Main Grid: Leaflet Geospatial Map + Risk Assessment -->
+<!-- Dashboard Main Grid: Geospatial Intelligence Map + Precision Risk Assessment -->
 <section class="dashboard-grid">
-  <!-- Map Card -->
+  <!-- Dedicated City-Focused Geospatial Station Monitor -->
   <div class="glass-card">
     <div class="card-header">
       <div>
         <h2 class="card-title">
-          <i data-feather="map"></i>
-          <span>Multi-City Geospatial Risk & Thermal Heatmap</span>
+          <i data-feather="map-pin"></i>
+          <span>Target Station Geospatial Monitor: <strong id="map-city-name" style="color:var(--text-primary);">Delhi</strong></span>
         </h2>
-        <div class="card-subtitle">Click on any city marker to inspect live predictions and update the dashboard</div>
+        <div class="card-subtitle">Localized meteorological station coordinates & active climate risk layer</div>
       </div>
-      <!-- Layer Toggle -->
-      <div class="map-layer-controls">
-        <button id="layer-markers-btn" class="layer-btn active">Risk Markers</button>
-        <button id="layer-heatmap-btn" class="layer-btn">Thermal Heatmap</button>
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <span class="badge badge-normal" id="station-status-badge">
+          <i data-feather="radio" style="width:12px;height:12px;"></i> Station Active
+        </span>
       </div>
     </div>
 
     <div class="map-container-wrapper">
       <div id="leaflet-map"></div>
+      <div class="map-station-overlay" id="map-station-overlay">
+        <div class="overlay-row">
+          <span class="overlay-label">Station:</span>
+          <strong id="overlay-city" class="overlay-val">Delhi (NCT of Delhi)</strong>
+        </div>
+        <div class="overlay-row">
+          <span class="overlay-label">Coordinates:</span>
+          <span id="overlay-coords" class="overlay-val">28.6139° N, 77.2090° E</span>
+        </div>
+        <div class="overlay-row">
+          <span class="overlay-label">IMD Baseline:</span>
+          <span id="overlay-threshold" class="overlay-val">40.0°C (Plains Threshold)</span>
+        </div>
+      </div>
     </div>
 
-    <!-- Map Legend -->
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.75rem; font-size:0.75rem; color:var(--text-muted); flex-wrap:wrap; gap:0.5rem;">
-      <div style="display:flex; align-items:center; gap:0.75rem;">
-        <span style="display:flex; align-items:center; gap:0.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#10b981;display:inline-block;"></span> Normal</span>
-        <span style="display:flex; align-items:center; gap:0.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:inline-block;"></span> Moderate</span>
-        <span style="display:flex; align-items:center; gap:0.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#f97316;display:inline-block;"></span> Warning (High)</span>
-        <span style="display:flex; align-items:center; gap:0.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;"></span> Severe</span>
-        <span style="display:flex; align-items:center; gap:0.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#ec4899;display:inline-block;"></span> Extreme</span>
+    <!-- Map Cartographic Legend -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-top:0.85rem; font-size:0.75rem; color:var(--text-muted); flex-wrap:wrap; gap:0.5rem; border-top:1px solid var(--border-subtle); padding-top:0.6rem;">
+      <div style="display:flex; align-items:center; gap:0.85rem;">
+        <span style="display:flex; align-items:center; gap:0.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#16a34a;display:inline-block;"></span> Normal</span>
+        <span style="display:flex; align-items:center; gap:0.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#d97706;display:inline-block;"></span> Moderate</span>
+        <span style="display:flex; align-items:center; gap:0.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#ea580c;display:inline-block;"></span> Warning</span>
+        <span style="display:flex; align-items:center; gap:0.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#dc2626;display:inline-block;"></span> Severe</span>
+        <span style="display:flex; align-items:center; gap:0.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#991b1b;display:inline-block;"></span> Extreme</span>
       </div>
-      <span>Target Date: <strong id="map-target-date" style="color:var(--text-primary);">--</strong></span>
+      <span>Forecast Horizon: <strong id="map-target-date" style="color:var(--text-primary);">--</strong></span>
     </div>
   </div>
 
-  <!-- Risk Assessment Card -->
+  <!-- Operational Risk Assessment & Gauge Panel -->
   <div class="glass-card">
     <div class="card-header">
       <div>
         <h2 class="card-title">
-          <i data-feather="alert-triangle"></i>
+          <i data-feather="shield"></i>
           <span>Next-Day Risk Assessment</span>
         </h2>
         <div class="card-subtitle" id="risk-target-date">Forecast for Tomorrow</div>
@@ -168,30 +188,31 @@
     </div>
 
     <div class="risk-card-content">
-      <!-- Animated Circular Confidence Gauge -->
+      <!-- Precision Circular Probability Gauge -->
       <div class="gauge-wrapper">
         <svg class="gauge-svg" viewBox="0 0 100 100">
           <circle class="gauge-bg" cx="50" cy="50" r="40" />
           <circle id="gauge-circle" class="gauge-progress" cx="50" cy="50" r="40"
-                  stroke-dasharray="251.32" stroke-dashoffset="251.32" stroke="#10b981" />
+                  stroke-dasharray="251.32" stroke-dashoffset="251.32" stroke="#16a34a" />
         </svg>
         <div class="gauge-inner-text">
           <div id="gauge-percent-text" class="gauge-percent">0%</div>
-          <div class="gauge-label">Probability P(t+1)</div>
+          <div class="gauge-label">Probability</div>
+          <div class="gauge-sublabel">P(t+1)</div>
         </div>
       </div>
 
-      <!-- Risk Level Banner -->
-      <div id="risk-banner" class="risk-level-banner" style="background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3);">
+      <!-- Assessed Risk Level Banner -->
+      <div id="risk-banner" class="risk-level-banner" style="background: var(--risk-normal-bg); color: var(--risk-normal); border: 1px solid var(--risk-normal-border);">
         <i data-feather="check-circle" id="risk-banner-icon" style="width:18px;height:18px;"></i>
         <span id="risk-banner-text">LOW THERMAL RISK</span>
       </div>
 
-      <!-- Key Numerical Output Details -->
+      <!-- Key Numerical Metric Output Rows -->
       <div class="prediction-details-list">
         <div class="detail-row">
           <span class="detail-label">Predicted Max Temperature</span>
-          <span class="detail-value" id="detail-pred-temp" style="font-size:1.05rem; color:var(--accent-ember);">--.-°C</span>
+          <span class="detail-value" id="detail-pred-temp" style="font-size:1.05rem; color:var(--brand-800);">--.-°C</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">80% Uncertainty Bounds [p10, p90]</span>
@@ -202,38 +223,38 @@
           <span class="detail-value" id="detail-departure">+0.0°C</span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Optimal Decision Threshold</span>
-          <span class="detail-value">τ* = 0.230 (Isotonic Calibrated)</span>
+          <span class="detail-label">Decision Threshold</span>
+          <span class="detail-value" style="font-weight:600;">τ* = 0.230 <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(Isotonic Calibrated)</span></span>
         </div>
         <div class="detail-row">
-          <span class="detail-label">Underlying Model</span>
+          <span class="detail-label">Inference Engine</span>
           <span class="detail-value" style="font-size:0.75rem; color:var(--text-muted);">Stage 1 Huber + Stage 2 LightGBM</span>
         </div>
       </div>
 
-      <!-- Direct Action to Advisory Studio -->
-      <a href="{{ url_for('advisory_view') }}" id="generate-advisory-link" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">
-        <i data-feather="file-text"></i>
-        <span>Open Advisory Studio for this Event</span>
+      <!-- Action: Open Advisory Studio -->
+      <a href="{{ url_for('advisory_view') }}" id="generate-advisory-link" class="btn btn-primary" style="width:100%; margin-top:0.25rem;">
+        <i data-feather="file-text" style="width:15px;height:15px;"></i>
+        <span>Generate Stakeholder Advisory</span>
       </a>
     </div>
   </div>
 </section>
 
 <!-- 14-Day Historical Trajectory Chart -->
-<section class="glass-card">
+<section class="glass-card" style="margin-bottom: 1.5rem;">
   <div class="card-header">
     <div>
       <h2 class="card-title">
         <i data-feather="trending-up"></i>
         <span id="trajectory-title">14-Day Observed Temperature Trajectory vs Climatological Threshold</span>
       </h2>
-      <div class="card-subtitle">Continuous historical trend leading up to Day t with next-day machine learning projection</div>
+      <div class="card-subtitle">Continuous historical observations leading up to Day t with next-day machine learning projection</div>
     </div>
-    <div style="font-size:0.8rem; color:var(--text-muted); display:flex; align-items:center; gap:0.5rem;">
-      <span style="display:inline-block;width:12px;height:3px;background:#f97316;"></span> Max Temp
-      <span style="display:inline-block;width:12px;height:3px;background:#06b6d4;"></span> Min Temp
-      <span style="display:inline-block;width:12px;height:2px;border-top:2px dashed #ef4444;"></span> IMD Threshold
+    <div style="font-size:0.8rem; color:var(--text-muted); display:flex; align-items:center; gap:0.85rem; flex-wrap:wrap;">
+      <span style="display:flex;align-items:center;gap:0.35rem;"><span style="display:inline-block;width:12px;height:3px;background:#0d9488;border-radius:1px;"></span> Max Temp (Teal)</span>
+      <span style="display:flex;align-items:center;gap:0.35rem;"><span style="display:inline-block;width:12px;height:3px;background:#7c3aed;border-radius:1px;"></span> Min Temp (Violet)</span>
+      <span style="display:flex;align-items:center;gap:0.35rem;"><span style="display:inline-block;width:12px;height:2px;border-top:2px dashed #e11d48;"></span> IMD Threshold (Crimson)</span>
     </div>
   </div>
 
@@ -242,12 +263,12 @@
   </div>
 </section>
 
-<!-- Advanced Climate Stress Simulator Section -->
-<section class="glass-card simulator-card" style="margin-top: 1.5rem;">
+<!-- Counterfactual Climate Stress Simulator (What-If Analysis) -->
+<section class="glass-card simulator-card">
   <div class="card-header">
     <div>
       <h2 class="card-title">
-        <i data-feather="cpu" style="color:var(--neon-blue);"></i>
+        <i data-feather="cpu"></i>
         <span>Counterfactual Climate Stress Simulator (What-If Analysis)</span>
       </h2>
       <div class="card-subtitle">
@@ -256,11 +277,11 @@
     </div>
     <div style="display:flex; gap:0.5rem; align-items:center;">
       <button id="dispatch-alert-btn" class="btn btn-outline" style="font-size:0.78rem; padding:0.4rem 0.85rem;" title="Simulate municipal emergency dispatch broadcast">
-        <i data-feather="send" style="width:13px;height:13px; color:var(--neon-blue);"></i>
+        <i data-feather="send" style="width:13px;height:13px; color:var(--brand-600);"></i>
         <span>Broadcast Emergency Alert</span>
       </button>
-      <span class="badge" style="background:rgba(0,240,255,0.12); color:#00f0ff; border:1px solid rgba(0,240,255,0.4);">
-        <i data-feather="sliders" style="width:12px;height:12px;"></i> Live In-Silico ML
+      <span class="badge" style="background:var(--brand-50); color:var(--brand-600); border:1px solid var(--brand-100);">
+        <i data-feather="sliders" style="width:12px;height:12px;"></i> In-Silico ML
       </span>
     </div>
   </div>
@@ -269,11 +290,11 @@
     <!-- Slider 1: Ambient Temperature Shift -->
     <div class="slider-box">
       <div class="slider-header">
-        <span style="color:var(--text-secondary);"><i data-feather="thermometer" style="width:13px;height:13px;color:var(--neon-blue);"></i> Ambient Temp Shock</span>
+        <span style="color:var(--text-secondary);"><i data-feather="thermometer" style="width:14px;height:14px;color:var(--brand-600);"></i> Ambient Temperature Shock</span>
         <span id="slider-temp-badge" class="slider-val-badge">+1.5°C</span>
       </div>
       <input type="range" id="sim-temp-offset" class="cyber-slider" min="-3.0" max="5.0" step="0.5" value="1.5">
-      <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-top:0.4rem;">
+      <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-top:0.4rem;">
         <span>-3.0°C (Cooling)</span>
         <span>0.0°C</span>
         <span>+5.0°C (Severe Surge)</span>
@@ -283,11 +304,11 @@
     <!-- Slider 2: Nighttime Min Temp Shift -->
     <div class="slider-box">
       <div class="slider-header">
-        <span style="color:var(--text-secondary);"><i data-feather="moon" style="width:13px;height:13px;color:var(--neon-blue);"></i> Nighttime Heat Retention</span>
+        <span style="color:var(--text-secondary);"><i data-feather="moon" style="width:14px;height:14px;color:var(--brand-600);"></i> Nighttime Heat Retention</span>
         <span id="slider-night-badge" class="slider-val-badge">+1.0°C</span>
       </div>
       <input type="range" id="sim-night-offset" class="cyber-slider" min="0.0" max="4.0" step="0.5" value="1.0">
-      <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-top:0.4rem;">
+      <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-top:0.4rem;">
         <span>0.0°C (Normal Night)</span>
         <span>+2.0°C</span>
         <span>+4.0°C (Acute Retention)</span>
@@ -297,61 +318,61 @@
     <!-- Slider 3: Rainfall Anomaly -->
     <div class="slider-box">
       <div class="slider-header">
-        <span style="color:var(--text-secondary);"><i data-feather="cloud-drizzle" style="width:13px;height:13px;color:var(--neon-blue);"></i> Rainfall Anomaly</span>
+        <span style="color:var(--text-secondary);"><i data-feather="cloud-drizzle" style="width:14px;height:14px;color:var(--brand-600);"></i> Rainfall Anomaly</span>
         <span id="slider-rain-badge" class="slider-val-badge">-5.0 mm</span>
       </div>
       <input type="range" id="sim-rain-offset" class="cyber-slider" min="-10.0" max="20.0" step="1.0" value="-5.0">
-      <div style="display:flex; justify-content:space-between; font-size:0.7rem; color:var(--text-muted); margin-top:0.4rem;">
+      <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:var(--text-muted); margin-top:0.4rem;">
         <span>-10 mm (Dry Spurt)</span>
         <span>0 mm</span>
-        <span>+20 mm (Pre-Monsoon Shower)</span>
+        <span>+20 mm (Pre-Monsoon Rain)</span>
       </div>
     </div>
   </div>
 
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem; margin-bottom:1rem;">
-    <button id="run-simulation-btn" class="btn btn-primary" style="padding:0.7rem 1.6rem;">
-      <i data-feather="activity"></i>
+    <button id="run-simulation-btn" class="btn btn-primary" style="padding:0.6rem 1.4rem;">
+      <i data-feather="activity" style="width:15px;height:15px;"></i>
       <span>Run Stress Simulation</span>
     </button>
-    <div id="sim-status-msg" style="font-size:0.8rem; color:var(--neon-blue); font-weight:600;">
-      Adjust sliders and click Run to test climate shock resilience.
+    <div id="sim-status-msg" style="font-size:0.82rem; color:var(--brand-700); font-weight:600;">
+      Adjust sliders and click Run to observe climate shock dynamics.
     </div>
   </div>
 
   <!-- Simulation Output Comparison Grid -->
   <div class="sim-output-grid" id="sim-output-panel" style="display:none;">
     <!-- Baseline Output -->
-    <div class="sim-box" style="border-left: 3px solid #64748b;">
+    <div class="sim-box" style="border-left: 3px solid #94a3b8;">
       <div style="font-size:0.75rem; text-transform:uppercase; color:var(--text-muted); font-weight:700; margin-bottom:0.4rem;">
-        Baseline Model Output
+        Baseline Model Prediction
       </div>
       <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
-        <span style="color:var(--text-secondary); font-size:0.85rem;">Predicted Max:</span>
-        <strong id="sim-base-temp" style="color:#fff;">--.-°C</strong>
+        <span style="color:var(--text-secondary); font-size:0.85rem;">Predicted Max Temp:</span>
+        <strong id="sim-base-temp" style="color:var(--text-primary);">--.-°C</strong>
       </div>
       <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
         <span style="color:var(--text-secondary); font-size:0.85rem;">Heatwave Probability:</span>
-        <strong id="sim-base-prob">--.-%</strong>
+        <strong id="sim-base-prob" style="color:var(--text-primary);">--.-%</strong>
       </div>
       <div style="display:flex; justify-content:space-between;">
-        <span style="color:var(--text-secondary); font-size:0.85rem;">Severity:</span>
+        <span style="color:var(--text-secondary); font-size:0.85rem;">Severity Tier:</span>
         <span id="sim-base-badge" class="badge badge-normal">--</span>
       </div>
     </div>
 
     <!-- Simulated Shock Output -->
-    <div class="sim-box" style="border-left: 3px solid var(--neon-blue);">
-      <div style="font-size:0.75rem; text-transform:uppercase; color:var(--neon-blue); font-weight:700; margin-bottom:0.4rem;">
+    <div class="sim-box" style="border-left: 3px solid var(--brand-600);">
+      <div style="font-size:0.75rem; text-transform:uppercase; color:var(--brand-700); font-weight:700; margin-bottom:0.4rem;">
         Simulated Stress Scenario
       </div>
       <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
-        <span style="color:var(--text-secondary); font-size:0.85rem;">Simulated Max:</span>
-        <strong id="sim-shock-temp" style="color:var(--neon-blue);">--.-°C</strong>
+        <span style="color:var(--text-secondary); font-size:0.85rem;">Simulated Max Temp:</span>
+        <strong id="sim-shock-temp" style="color:var(--brand-800);">--.-°C</strong>
       </div>
       <div style="display:flex; justify-content:space-between; margin-bottom:0.25rem;">
         <span style="color:var(--text-secondary); font-size:0.85rem;">Simulated Probability:</span>
-        <strong id="sim-shock-prob" style="color:#fb923c;">--.-%</strong>
+        <strong id="sim-shock-prob" style="color:var(--risk-warning);">--.-%</strong>
       </div>
       <div style="display:flex; justify-content:space-between;">
         <span style="color:var(--text-secondary); font-size:0.85rem;">Simulated Severity:</span>
@@ -360,8 +381,8 @@
     </div>
 
     <!-- Scientific Takeaway Footer -->
-    <div style="grid-column: 1 / -1; background:rgba(0,240,255,0.06); border:1px solid rgba(0,240,255,0.25); border-radius:var(--radius-sm); padding:0.75rem 1rem; font-size:0.82rem; color:#bae6fd;">
-      <i data-feather="info" style="width:14px;height:14px; color:var(--neon-blue); vertical-align:middle; margin-right:4px;"></i>
+    <div class="alert-box alert-info" style="grid-column: 1 / -1;">
+      <i data-feather="info" style="width:15px;height:15px; color:var(--brand-600); vertical-align:middle; margin-right:4px;"></i>
       <span id="sim-takeaway-text">Takeaway text will appear here.</span>
     </div>
   </div>
@@ -369,5 +390,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=2.1"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=7.0"></script>
 {% endblock %}

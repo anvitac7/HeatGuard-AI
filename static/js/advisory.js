@@ -62,7 +62,7 @@ function bindEvents() {
       if (!rawAdvisoryText) return;
       navigator.clipboard.writeText(rawAdvisoryText).then(() => {
         const origHtml = copyBtn.innerHTML;
-        copyBtn.innerHTML = `<i data-feather="check" style="width:13px;height:13px;"></i> Copied!`;
+        copyBtn.innerHTML = `<i data-feather="check" style="width:13px;height:13px;color:#16a34a;"></i> Copied!`;
         feather.replace();
         setTimeout(() => {
           copyBtn.innerHTML = origHtml;
@@ -98,8 +98,8 @@ async function fetchAdvisory() {
 
   contentEl.innerHTML = `
     <div style="text-align:center; padding:3rem 1rem; color:var(--text-muted);">
-      <div style="display:inline-block; width:28px; height:28px; border:3px solid var(--accent-orange); border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
-      <div style="margin-top:0.75rem; font-size:0.9rem;">Compiling verified ML context & generating grounded advisory...</div>
+      <div style="display:inline-block; width:28px; height:28px; border:3px solid var(--brand-600); border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+      <div style="margin-top:0.75rem; font-size:0.88rem; font-weight:500;">Compiling verified ML context & generating grounded advisory...</div>
     </div>
   `;
 
@@ -118,11 +118,11 @@ async function fetchAdvisory() {
     if (json.status === "success") {
       renderAdvisory(json.advisory);
     } else {
-      contentEl.innerHTML = `<div style="color:#ef4444; padding:1.5rem;">Failed to generate advisory: ${json.message}</div>`;
+      contentEl.innerHTML = `<div style="color:#dc2626; padding:1.5rem;">Failed to generate advisory: ${json.message}</div>`;
     }
   } catch (err) {
     console.error("Advisory error:", err);
-    contentEl.innerHTML = `<div style="color:#ef4444; padding:1.5rem;">Network connection error.</div>`;
+    contentEl.innerHTML = `<div style="color:#dc2626; padding:1.5rem;">Network connection error.</div>`;
   }
 }
 

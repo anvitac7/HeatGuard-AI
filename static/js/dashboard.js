@@ -11,15 +11,15 @@ let activeLayer = 'markers'; // 'markers' or 'heatmap'
 let trajectoryChart = null;
 let currentCityData = null;
 
-// City coordinates mapping
+// City coordinates and IMD meteorological metadata
 const CITY_COORDS = {
-  "Delhi": [28.6139, 77.2090],
-  "Ahmedabad": [23.0225, 72.5714],
-  "Chennai": [13.0827, 80.2707],
-  "Kolkata": [22.5726, 88.3639],
-  "Pune": [18.5204, 73.8567],
-  "Mumbai": [19.0760, 72.8777],
-  "Bengaluru": [12.9716, 77.5946]
+  "Delhi": { lat: 28.6139, lon: 77.2090, state: "NCT of Delhi", threshold: "40.0°C (Plains Threshold)" },
+  "Ahmedabad": { lat: 23.0225, lon: 72.5714, state: "Gujarat", threshold: "40.0°C (Plains Threshold)" },
+  "Chennai": { lat: 13.0827, lon: 80.2707, state: "Tamil Nadu", threshold: "37.0°C (Coastal Threshold)" },
+  "Kolkata": { lat: 22.5726, lon: 88.3639, state: "West Bengal", threshold: "37.0°C (Coastal Threshold)" },
+  "Pune": { lat: 18.5204, lon: 73.8567, state: "Maharashtra", threshold: "40.0°C (Plains Threshold)" },
+  "Mumbai": { lat: 19.0760, lon: 72.8777, state: "Maharashtra", threshold: "37.0°C (Coastal Threshold)" },
+  "Bengaluru": { lat: 12.9716, lon: 77.5946, state: "Karnataka", threshold: "38.0°C (Plateau Threshold)" }
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -30,44 +30,59 @@ document.addEventListener("DOMContentLoaded", () => {
   const city = document.getElementById("city-select").value;
   const date = document.getElementById("date-select").value;
   loadPrediction(city, date);
-  loadAllCitiesMap(date);
 });
 
+let currentTileLayer = null;
+
+function getTileConfig() {
+  return {
+    url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+    options: {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | HeatGuard AI'
+    }
+  };
+}
+
+function updateMapTheme(theme) {
+  if (!map) return;
+  if (!currentTileLayer) {
+    const cfg = getTileConfig();
+    currentTileLayer = L.tileLayer(cfg.url, cfg.options).addTo(map);
+  }
+}
+
 // ----------------------------------------------------------------------------------------
-// 1. Leaflet.js Map Initialization
+// 1. Leaflet.js Map Initialization (Locked, Focused Station Monitor)
 // ----------------------------------------------------------------------------------------
 function initMap() {
   const mapElement = document.getElementById("leaflet-map");
   if (!mapElement) return;
 
-  // Center on India
+  // Initialize locked station map (no user dragging, zoom controls or accidental drifting)
   map = L.map("leaflet-map", {
-    center: [21.5, 78.5],
-    zoom: 5,
-    minZoom: 4,
-    maxZoom: 9,
-    zoomControl: true,
+    center: [28.6139, 77.2090],
+    zoom: 11,
+    minZoom: 9,
+    maxZoom: 14,
+    dragging: false,
+    touchZoom: false,
+    scrollWheelZoom: false,
+    doubleClickZoom: false,
+    boxZoom: false,
+    keyboard: false,
+    zoomControl: false,
+    attributionControl: false
   });
 
-  // High-Resolution Dark Gray Canvas Tiles (Free, Zero API Key Required, No Watermark)
-  L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-    {
-      attribution: '&copy; <a href="https://www.esri.com/" target="_blank">Esri</a> | HeatGuard AI',
-      maxZoom: 16,
-    }
-  ).addTo(map);
-
-  // Administrative Boundaries & City Labels Layer
-  L.tileLayer(
-    "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}",
-    {
-      attribution: "",
-      maxZoom: 16,
-    }
-  ).addTo(map);
+  const activeTheme = document.documentElement.getAttribute("data-theme") || "light";
+  updateMapTheme(activeTheme);
 
   markersLayer = L.layerGroup().addTo(map);
+
+  setTimeout(() => {
+    if (map) map.invalidateSize();
+  }, 200);
 }
 
 // ----------------------------------------------------------------------------------------
@@ -79,10 +94,17 @@ function bindEvents() {
   const runBtn = document.getElementById("run-predict-btn");
   const refreshAllBtn = document.getElementById("refresh-all-btn");
 
+  // Listen for dark/light theme switch
+  window.addEventListener("themechanged", (e) => {
+    updateMapTheme(e.detail.theme);
+    if (citySelect && dateSelect) {
+      updateTrajectoryChart(citySelect.value, dateSelect.value);
+    }
+  });
+
   if (runBtn) {
     runBtn.addEventListener("click", () => {
       loadPrediction(citySelect.value, dateSelect.value);
-      loadAllCitiesMap(dateSelect.value);
     });
   }
 
@@ -95,13 +117,12 @@ function bindEvents() {
   if (dateSelect) {
     dateSelect.addEventListener("change", () => {
       loadPrediction(citySelect.value, dateSelect.value);
-      loadAllCitiesMap(dateSelect.value);
     });
   }
 
   if (refreshAllBtn) {
     refreshAllBtn.addEventListener("click", () => {
-      loadAllCitiesMap(dateSelect.value);
+      loadPrediction(citySelect.value, dateSelect.value);
     });
   }
 
@@ -109,9 +130,9 @@ function bindEvents() {
   document.querySelectorAll(".chip-tag[data-color]").forEach(tag => {
     const c = tag.getAttribute("data-color");
     if (c) {
-      tag.style.backgroundColor = c + "33";
+      tag.style.backgroundColor = c + "22";
       tag.style.color = c;
-      tag.style.borderColor = c + "66";
+      tag.style.borderColor = c + "44";
     }
   });
 
@@ -127,31 +148,8 @@ function bindEvents() {
       if (dateSelect) dateSelect.value = date;
 
       loadPrediction(city, date);
-      loadAllCitiesMap(date);
     });
   });
-
-  // Layer Switcher Buttons
-  const markersBtn = document.getElementById("layer-markers-btn");
-  const heatmapBtn = document.getElementById("layer-heatmap-btn");
-
-  if (markersBtn && heatmapBtn) {
-    markersBtn.addEventListener("click", () => {
-      activeLayer = 'markers';
-      markersBtn.classList.add("active");
-      heatmapBtn.classList.remove("active");
-      if (heatLayer) map.removeLayer(heatLayer);
-      if (markersLayer) map.addLayer(markersLayer);
-    });
-
-    heatmapBtn.addEventListener("click", () => {
-      activeLayer = 'heatmap';
-      heatmapBtn.classList.add("active");
-      markersBtn.classList.remove("active");
-      if (markersLayer) map.removeLayer(markersLayer);
-      loadHeatmapLayer(dateSelect.value);
-    });
-  }
 
   // Climate Stress Simulator Sliders
   const tempSlider = document.getElementById("sim-temp-offset");
@@ -210,11 +208,7 @@ async function loadPrediction(city, date) {
       updateKPICards(currentCityData);
       updateRiskGauge(currentCityData);
       updateTrajectoryChart(city, date);
-
-      // Pan map smoothly to the selected city
-      if (map && CITY_COORDS[city]) {
-        map.panTo(CITY_COORDS[city], { animate: true, duration: 1 });
-      }
+      updateCityStationMap(city, currentCityData);
     } else {
       console.error("Prediction API returned error:", data.message);
     }
@@ -259,6 +253,14 @@ function updateKPICards(data) {
     statusBadge.className = "badge badge-normal";
   }
   document.getElementById("kpi-rain").innerText = `${data.rain.toFixed(1)} mm`;
+
+  // KPI 4: 74-Year Historical Benchmark
+  if (data.historical_peak != null) {
+    document.getElementById("kpi-historical-peak").innerText = data.historical_peak.toFixed(1);
+  }
+  if (data.total_historical_hw_days != null) {
+    document.getElementById("kpi-total-hw").innerText = `Total historical heatwave days: ${data.total_historical_hw_days}`;
+  }
 
   // Map subtext
   const mapDateEl = document.getElementById("map-target-date");
@@ -306,9 +308,9 @@ function updateRiskGauge(data) {
   const bannerText = document.getElementById("risk-banner-text");
   if (banner && bannerText) {
     bannerText.innerText = `${pred.risk_level} THERMAL RISK`;
-    banner.style.background = `${color}22`;
+    banner.style.background = `${color}18`;
     banner.style.color = color;
-    banner.style.borderColor = `${color}55`;
+    banner.style.borderColor = `${color}44`;
   }
 
   // Details List
@@ -320,119 +322,80 @@ function updateRiskGauge(data) {
 }
 
 // ----------------------------------------------------------------------------------------
-// 5. Multi-City Map Synchronization (Pins & Tooltips)
+// 5. Single-City Geospatial Station Monitor (Locked & Centered)
 // ----------------------------------------------------------------------------------------
-async function loadAllCitiesMap(date) {
-  try {
-    const res = await fetch("/api/predict-all", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ date }),
+function updateCityStationMap(city, data) {
+  if (!map || !CITY_COORDS[city]) return;
+  const meta = CITY_COORDS[city];
+
+  // Update card header and overlay telemetry texts
+  const mapCityName = document.getElementById("map-city-name");
+  if (mapCityName) mapCityName.innerText = city;
+
+  const overlayCity = document.getElementById("overlay-city");
+  if (overlayCity) overlayCity.innerText = `${city} (${meta.state})`;
+
+  const overlayCoords = document.getElementById("overlay-coords");
+  if (overlayCoords) overlayCoords.innerText = `${meta.lat.toFixed(4)}° N, ${meta.lon.toFixed(4)}° E`;
+
+  const overlayThreshold = document.getElementById("overlay-threshold");
+  if (overlayThreshold) overlayThreshold.innerText = meta.threshold;
+
+  const mapDateEl = document.getElementById("map-target-date");
+  if (mapDateEl && data && data.target_date) {
+    mapDateEl.innerText = data.target_date;
+  }
+
+  // Smoothly center and lock map on the selected target city at high-precision zoom
+  map.invalidateSize();
+  map.setView([meta.lat, meta.lon], 11, { animate: true });
+
+  // Place clean, glowing station radar pulse marker
+  if (markersLayer) {
+    markersLayer.clearLayers();
+
+    const pred = (data && data.prediction) ? data.prediction : {};
+    const color = pred.alert_color || "#16a34a";
+    const tempVal = pred.predicted_temp_max != null
+      ? `${pred.predicted_temp_max.toFixed(0)}°`
+      : (data && data.current_temp_max != null ? `${data.current_temp_max.toFixed(0)}°` : "--");
+
+    const stationIcon = L.divIcon({
+      className: "city-station-marker",
+      iconSize: [34, 34],
+      iconAnchor: [17, 17],
+      html: `
+        <div class="station-badge" style="background:${color};">
+          <span>${tempVal}</span>
+        </div>
+      `,
     });
 
-    const data = await res.json();
-    if (data.status === "success" && markersLayer) {
-      markersLayer.clearLayers();
+    const marker = L.marker([meta.lat, meta.lon], { icon: stationIcon }).addTo(markersLayer);
 
-      data.cities.forEach(item => {
-        const city = item.city;
-        const lat = item.latitude;
-        const lon = item.longitude;
-        const pred = item.prediction;
-        const color = pred.alert_color;
-
-        // Custom pulsing HTML marker
-        const pulseIcon = L.divIcon({
-          className: "city-pulse-marker",
-          iconSize: [36, 36],
-          iconAnchor: [18, 18],
-          html: `
-            <div class="pulse-ring" style="background:${color}44;"></div>
-            <div class="pulse-core" style="background:${color};">${pred.predicted_temp_max.toFixed(0)}°</div>
-          `,
-        });
-
-        const marker = L.marker([lat, lon], { icon: pulseIcon }).addTo(markersLayer);
-
-        // Interactive Cyber Tooltip
-        marker.bindPopup(`
-          <div style="font-family:var(--font-sans); color:#f8fafc; min-width:190px; padding:2px;">
-            <div style="font-weight:800; font-size:1.05rem; margin-bottom:0.25rem; color:#00f0ff;">${city}</div>
-            <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:0.6rem;">Forecast: ${item.target_date}</div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem; font-size:0.85rem;">
-              <span style="color:#94a3b8;">Predicted Max:</span>
-              <strong style="color:#fff;">${pred.predicted_temp_max.toFixed(1)}°C</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem; font-size:0.85rem;">
-              <span style="color:#94a3b8;">Departure:</span>
-              <strong style="color:${color};">${pred.predicted_departure >= 0 ? '+' : ''}${pred.predicted_departure.toFixed(1)}°C</strong>
-            </div>
-            <div style="display:flex; justify-content:space-between; margin-bottom:0.65rem; font-size:0.85rem;">
-              <span style="color:#94a3b8;">Heatwave Prob:</span>
-              <strong style="color:#00f0ff;">${pred.probability_pct}%</strong>
-            </div>
-            <button onclick="selectCityFromMap('${city}')" style="width:100%; padding:0.45rem; background:linear-gradient(135deg, #00f0ff 0%, #0284c7 100%); color:#030712; border:none; border-radius:6px; font-weight:700; cursor:pointer; font-size:0.8rem; box-shadow:0 0 12px rgba(0,240,255,0.4); transition:transform 0.15s ease;">
-              Inspect ${city} View
-            </button>
-          </div>
-        `);
-      });
-
-      if (activeLayer === 'heatmap') {
-        loadHeatmapLayer(date);
-      }
-    }
-  } catch (err) {
-    console.error("Failed to load map markers:", err);
-  }
-}
-
-// Global hook for popup buttons
-window.selectCityFromMap = function(city) {
-  const citySelect = document.getElementById("city-select");
-  const dateSelect = document.getElementById("date-select");
-  if (citySelect) {
-    citySelect.value = city;
-    loadPrediction(city, dateSelect.value);
-  }
-};
-
-// ----------------------------------------------------------------------------------------
-// 6. Leaflet Thermal Heatmap Layer
-// ----------------------------------------------------------------------------------------
-async function loadHeatmapLayer(date) {
-  if (typeof L.heatLayer === 'undefined') return;
-
-  try {
-    const res = await fetch(`/api/heatmap-data?date=${encodeURIComponent(date)}`);
-    const json = await res.json();
-
-    if (json.status === "success") {
-      if (heatLayer) map.removeLayer(heatLayer);
-
-      // Points format: [lat, lng, intensity]
-      const points = json.points.map(p => [p.lat, p.lng, p.intensity]);
-
-      heatLayer = L.heatLayer(points, {
-        radius: 45,
-        blur: 28,
-        maxZoom: 8,
-        gradient: {
-          0.2: '#06b6d4',
-          0.4: '#10b981',
-          0.6: '#f59e0b',
-          0.8: '#f97316',
-          1.0: '#ef4444'
-        }
-      }).addTo(map);
-    }
-  } catch (err) {
-    console.error("Failed to load thermal heatmap:", err);
+    marker.bindPopup(`
+      <div style="font-family:var(--font-sans); color:#0f172a; min-width:200px; padding:4px;">
+        <div style="font-weight:700; font-size:1rem; margin-bottom:0.15rem; color:#0f172a;">${city} IMD Station</div>
+        <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.5rem;">${meta.state} • ${meta.lat.toFixed(4)}°N, ${meta.lon.toFixed(4)}°E</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem; font-size:0.8rem;">
+          <span style="color:#64748b;">Predicted Max:</span>
+          <strong style="color:#0f172a;">${pred.predicted_temp_max ? pred.predicted_temp_max.toFixed(1) + '°C' : '--'}</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem; font-size:0.8rem;">
+          <span style="color:#64748b;">Thermal Risk:</span>
+          <strong style="color:${color};">${pred.severity || 'Normal'} (${pred.probability_pct || 0}%)</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.75rem; border-top:1px solid #e2e8f0; padding-top:4px; margin-top:4px;">
+          <span style="color:#64748b;">IMD Threshold:</span>
+          <strong style="color:#334155;">${meta.threshold}</strong>
+        </div>
+      </div>
+    `);
   }
 }
 
 // ----------------------------------------------------------------------------------------
-// 7. Chart.js 14-Day Trajectory Visualization
+// 7. Chart.js 14-Day Trajectory Visualization (Enterprise Clean Styling)
 // ----------------------------------------------------------------------------------------
 async function updateTrajectoryChart(city, date) {
   const canvas = document.getElementById("trajectory-chart");
@@ -458,6 +421,21 @@ async function updateTrajectoryChart(city, date) {
         trajectoryChart.destroy();
       }
 
+      const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+      const gridColor = isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(15, 23, 42, 0.05)";
+      const tickColor = isDark ? "#94a3b8" : "#64748b";
+      const tooltipBg = isDark ? "#0f172a" : "#ffffff";
+      const tooltipTitle = isDark ? "#f8fafc" : "#0f172a";
+      const tooltipBody = isDark ? "#cbd5e1" : "#334155";
+      const tooltipBorder = isDark ? "#334155" : "#e2e8f0";
+
+      // Refined Scientific Color Palette (Teal Emerald / Royal Violet / Crimson)
+      const maxColor = isDark ? "#2dd4bf" : "#0d9488";
+      const maxBg = isDark ? "rgba(45, 212, 191, 0.16)" : "rgba(13, 148, 136, 0.09)";
+      const minColor = isDark ? "#a78bfa" : "#7c3aed";
+      const thrColor = isDark ? "#fb7185" : "#e11d48";
+      const projPointColor = isDark ? "#14b8a6" : "#0f766e";
+
       const ctx = canvas.getContext("2d");
       trajectoryChart = new Chart(ctx, {
         type: "line",
@@ -467,36 +445,44 @@ async function updateTrajectoryChart(city, date) {
             {
               label: "Observed & Forecast T_max (°C)",
               data: tMaxData,
-              borderColor: "#f97316",
-              backgroundColor: "rgba(249, 115, 22, 0.12)",
-              borderWidth: 2.5,
+              borderColor: maxColor,
+              backgroundColor: maxBg,
+              borderWidth: 2.4,
               tension: 0.3,
               fill: true,
               pointBackgroundColor: (context) => {
                 const index = context.dataIndex;
-                return index === tMaxData.length - 1 ? "#ec4899" : "#f97316";
+                return index === tMaxData.length - 1 ? projPointColor : maxColor;
+              },
+              pointBorderColor: (context) => {
+                const index = context.dataIndex;
+                return index === tMaxData.length - 1 ? "#ffffff" : maxColor;
+              },
+              pointBorderWidth: (context) => {
+                const index = context.dataIndex;
+                return index === tMaxData.length - 1 ? 2 : 1;
               },
               pointRadius: (context) => {
                 const index = context.dataIndex;
-                return index === tMaxData.length - 1 ? 7 : 4;
+                return index === tMaxData.length - 1 ? 6.5 : 3.5;
               },
             },
             {
               label: "Observed T_min (°C)",
               data: tMinData,
-              borderColor: "#00f0ff",
-              borderWidth: 2.0,
+              borderColor: minColor,
+              borderWidth: 2,
               borderDash: [4, 3],
               tension: 0.3,
               fill: false,
-              pointBackgroundColor: "#00f0ff",
-              pointRadius: 3.5,
+              pointBackgroundColor: minColor,
+              pointRadius: 3,
             },
             {
               label: "IMD Threshold (°C)",
               data: thrData,
-              borderColor: "#ef4444",
-              borderWidth: 2,
+              borderColor: thrColor,
+              borderWidth: 1.8,
               borderDash: [6, 4],
               fill: false,
               pointRadius: 0,
@@ -510,24 +496,25 @@ async function updateTrajectoryChart(city, date) {
           plugins: {
             legend: { display: false },
             tooltip: {
-              backgroundColor: "rgba(3, 7, 18, 0.95)",
-              titleColor: "#00f0ff",
-              bodyColor: "#f8fafc",
-              borderColor: "rgba(0, 240, 255, 0.4)",
+              backgroundColor: tooltipBg,
+              titleColor: tooltipTitle,
+              bodyColor: tooltipBody,
+              borderColor: tooltipBorder,
               borderWidth: 1,
-              padding: 11,
-              cornerRadius: 8,
+              padding: 10,
+              cornerRadius: 6,
+              boxShadow: "0 4px 6px -1px rgba(0,0,0,0.2)",
             }
           },
           scales: {
             x: {
-              grid: { color: "rgba(0, 240, 255, 0.06)" },
-              ticks: { color: "#94a3b8", font: { size: 11 } }
+              grid: { color: gridColor },
+              ticks: { color: tickColor, font: { size: 11 } }
             },
             y: {
-              grid: { color: "rgba(0, 240, 255, 0.06)" },
+              grid: { color: gridColor },
               ticks: {
-                color: "#94a3b8",
+                color: tickColor,
                 callback: (val) => `${val}°C`
               }
             }
@@ -575,7 +562,7 @@ async function runClimateSimulation() {
 
   if (runBtn) {
     runBtn.disabled = true;
-    runBtn.innerHTML = `<span style="display:inline-block;width:16px;height:16px;border:2px solid #030712;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></span> Simulating...`;
+    runBtn.innerHTML = `<span style="display:inline-block;width:14px;height:14px;border:2px solid #ffffff;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></span> Simulating...`;
   }
   if (statusMsg) {
     statusMsg.innerText = `Executing in-silico atmospheric perturbation for ${city}...`;
@@ -610,7 +597,7 @@ async function runClimateSimulation() {
 
       // Populate Simulated
       document.getElementById("sim-shock-temp").innerText = `${shock.temp_max.toFixed(1)}°C`;
-      const probColor = shock.probability_pct > 60 ? "#ef4444" : (shock.probability_pct > 23 ? "#f97316" : "#00f0ff");
+      const probColor = shock.probability_pct > 60 ? "#dc2626" : (shock.probability_pct > 23 ? "#ea580c" : "#16a34a");
       document.getElementById("sim-shock-prob").innerText = `${shock.probability_pct.toFixed(1)}%`;
       document.getElementById("sim-shock-prob").style.color = probColor;
 
@@ -621,7 +608,7 @@ async function runClimateSimulation() {
       // Takeaway
       document.getElementById("sim-takeaway-text").innerHTML = `
         <strong>Simulation Result:</strong> ${sim.scientific_takeaway}
-        ${deltas.risk_shifted ? '<span style="color:#f87171; font-weight:700; margin-left:6px;">⚠️ RISK TIER ESCALATION DETECTED</span>' : ''}
+        ${deltas.risk_shifted ? '<span style="color:#dc2626; font-weight:700; margin-left:6px;">⚠️ RISK TIER ESCALATION DETECTED</span>' : ''}
       `;
 
       if (outputPanel) outputPanel.style.display = "grid";
@@ -638,7 +625,7 @@ async function runClimateSimulation() {
   } finally {
     if (runBtn) {
       runBtn.disabled = false;
-      runBtn.innerHTML = `<i data-feather="activity"></i> <span>Run Stress Simulation</span>`;
+      runBtn.innerHTML = `<i data-feather="activity" style="width:15px;height:15px;"></i> <span>Run Stress Simulation</span>`;
       feather.replace();
     }
   }
@@ -690,9 +677,8 @@ async function dispatchEmergencyAlert() {
   } finally {
     if (dispatchBtn) {
       dispatchBtn.disabled = false;
-      dispatchBtn.innerHTML = `<i data-feather="send" style="width:13px;height:13px; color:var(--neon-blue);"></i> <span>Broadcast Emergency Alert</span>`;
+      dispatchBtn.innerHTML = `<i data-feather="send" style="width:13px;height:13px; color:var(--brand-600);"></i> <span>Broadcast Emergency Alert</span>`;
       feather.replace();
     }
   }
 }
-

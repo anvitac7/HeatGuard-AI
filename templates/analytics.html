@@ -4,20 +4,20 @@
 
 {% block content %}
 <!-- Executive Analytics Header -->
-<div class="glass-card" style="margin-bottom: 1.5rem; background: linear-gradient(135deg, rgba(8, 14, 30, 0.95) 0%, rgba(10, 22, 48, 0.85) 100%);">
+<div class="glass-card" style="margin-bottom: 1.25rem;">
   <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
     <div>
-      <h1 style="font-size: 1.6rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.35rem;">
+      <h1 style="font-size: 1.35rem; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 0.25rem; color: var(--text-primary);">
         74-Year Meteorological Climate Analytics (1951–2024)
       </h1>
-      <p style="color: var(--text-secondary); font-size: 0.9rem; max-width: 850px;">
-        Comprehensive empirical profiling of 187,387 daily records across 7 major Indian metropolitan hubs.
-        Uncovers decadal climate surge acceleration, severe spatial disparity, and historical heatwave persistence dynamics.
+      <p style="color: var(--text-secondary); font-size: 0.88rem; max-width: 850px;">
+        Empirical climate intelligence across 187,387 daily records for 7 Indian metropolitan hubs.
+        Uncovers decadal heatwave acceleration, spatial concentration, and thermal persistence dynamics.
       </p>
     </div>
     <div style="display:flex; gap:0.75rem; align-items:center;">
-      <span class="badge badge-extreme" style="font-size:0.8rem; padding:0.4rem 0.8rem;">
-        <i data-feather="alert-octagon" style="width:14px;height:14px;"></i> 2020–2024 Surge Active
+      <span class="badge badge-severe" style="font-size:0.8rem; padding:0.4rem 0.8rem;">
+        <i data-feather="alert-octagon" style="width:14px;height:14px;"></i> 2020–2024 Surge Acceleration Active
       </span>
     </div>
   </div>
@@ -25,23 +25,23 @@
 
 <!-- Summary Metrics Row -->
 <div class="kpi-grid">
-  <div class="glass-card kpi-card">
+  <div class="kpi-card">
     <div class="kpi-label">
-      <span>Total Dataset Size</span>
-      <i data-feather="database" style="color:var(--color-cyan); width:16px;height:16px;"></i>
+      <span>Total Dataset Volume</span>
+      <i data-feather="database" style="color:var(--brand-600); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
       <span class="kpi-value">{{ summary.total_records }}</span>
     </div>
     <div class="kpi-subtext">
-      <span>Temporal Span: <strong>{{ summary.temporal_span }}</strong></span>
+      <span>Observation Span: <strong>{{ summary.temporal_span }}</strong></span>
     </div>
   </div>
 
-  <div class="glass-card kpi-card">
+  <div class="kpi-card">
     <div class="kpi-label">
-      <span>Total Historical Heatwaves</span>
-      <i data-feather="flame" style="color:var(--color-severe); width:16px;height:16px;"></i>
+      <span>Total Heatwave Events</span>
+      <i data-feather="flame" style="color:var(--risk-severe); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
       <span class="kpi-value">{{ summary.total_heatwave_days }}</span>
@@ -53,10 +53,10 @@
     </div>
   </div>
 
-  <div class="glass-card kpi-card">
+  <div class="kpi-card">
     <div class="kpi-label">
       <span>All-Time Peak Temperature</span>
-      <i data-feather="sun" style="color:var(--accent-orange); width:16px;height:16px;"></i>
+      <i data-feather="sun" style="color:var(--risk-warning); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
       <span class="kpi-value">{{ summary.all_time_max_temp }}</span>
@@ -67,10 +67,10 @@
     </div>
   </div>
 
-  <div class="glass-card kpi-card">
+  <div class="kpi-card">
     <div class="kpi-label">
       <span>Model Validation Benchmarks</span>
-      <i data-feather="check-circle" style="color:var(--color-normal); width:16px;height:16px;"></i>
+      <i data-feather="check-circle" style="color:var(--risk-normal); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
       <span class="kpi-value">{{ summary.test_accuracy }}%</span>
@@ -78,13 +78,13 @@
       <span class="badge badge-normal" style="margin-left:auto;">{{ summary.pr_auc_lift }} Lift</span>
     </div>
     <div class="kpi-subtext">
-      <span>PR-AUC: <strong>{{ summary.test_pr_auc }}</strong> | Balanced Acc: <strong>{{ summary.test_balanced_accuracy }}%</strong></span>
+      <span>PR-AUC: <strong>{{ summary.test_pr_auc }}</strong> | Balanced: <strong>{{ summary.test_balanced_accuracy }}%</strong></span>
     </div>
   </div>
 </div>
 
-<!-- Primary Charts Row: Decadal Surge & City Disparity -->
-<div style="display:grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+<!-- Primary Charts Grid: Decadal Surge & City Disparity -->
+<div style="display:grid; grid-template-columns: 1.4fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
   <!-- Decadal Climate Surge Bar Chart -->
   <div class="glass-card">
     <div class="card-header">
@@ -96,15 +96,15 @@
         <div class="card-subtitle">Comparison of total heatwaves vs severe heatwave counts per decade</div>
       </div>
       <div style="font-size:0.75rem; color:var(--text-muted); display:flex; gap:0.6rem; align-items:center;">
-        <span style="display:flex;align-items:center;gap:0.3rem;"><span style="width:10px;height:10px;background:#f97316;display:inline-block;border-radius:2px;"></span> Total HW</span>
-        <span style="display:flex;align-items:center;gap:0.3rem;"><span style="width:10px;height:10px;background:#ef4444;display:inline-block;border-radius:2px;"></span> Severe HW</span>
+        <span style="display:flex;align-items:center;gap:0.3rem;"><span style="width:10px;height:10px;background:#ea580c;display:inline-block;border-radius:2px;"></span> Total HW</span>
+        <span style="display:flex;align-items:center;gap:0.3rem;"><span style="width:10px;height:10px;background:#dc2626;display:inline-block;border-radius:2px;"></span> Severe HW</span>
       </div>
     </div>
-    <div class="chart-container-wrapper" style="height:320px;">
+    <div class="chart-container-wrapper" style="height:300px;">
       <canvas id="decades-chart"></canvas>
     </div>
-    <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2); border-radius:var(--radius-sm); padding:0.75rem 1rem; margin-top:0.75rem; font-size:0.82rem; color:#fca5a5;">
-      <strong>⚠️ Critical Climate Finding:</strong> The 2020–2024 period (only 4.5 years) recorded <strong>284 heatwave days</strong> and <strong>34 severe events</strong>, already surpassing every full 10-year decade since 1951 in annual heatwave frequency (63.1 days/year vs historical 15–25).
+    <div class="alert-box alert-severe" style="margin-top:0.75rem;">
+      <strong>⚠️ Critical Climate Finding:</strong> The 2020–2024 period (only 4.5 years) recorded <strong>284 heatwave days</strong> and <strong>34 severe events</strong>, already exceeding every full 10-year decade since 1951 in annual frequency (63.1 days/year vs historical 15–25).
     </div>
   </div>
 
@@ -119,17 +119,17 @@
         <div class="card-subtitle">Delhi, Ahmedabad & Chennai account for 96.5% of total events</div>
       </div>
     </div>
-    <div class="chart-container-wrapper" style="height:320px;">
+    <div class="chart-container-wrapper" style="height:300px;">
       <canvas id="cities-chart"></canvas>
     </div>
-    <div style="background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.2); border-radius:var(--radius-sm); padding:0.75rem 1rem; margin-top:0.75rem; font-size:0.82rem; color:#67e8f9;">
+    <div class="alert-box alert-info" style="margin-top:0.75rem;">
       <strong>Geographical Insight:</strong> Bengaluru's static 40.0°C threshold was <strong>never breached</strong> in 74 consecutive years (all-time peak 38.93°C), and Mumbai recorded only 2 heatwave days.
     </div>
   </div>
 </div>
 
 <!-- Secondary Row: Monthly Seasonality & Heatwave Persistence -->
-<div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+<div style="display:grid; grid-template-columns: 1.3fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem;">
   <!-- Monthly Seasonality -->
   <div class="glass-card">
     <div class="card-header">
@@ -138,7 +138,7 @@
           <i data-feather="calendar"></i>
           <span>Monthly Seasonality Breakdown (Jan–Dec)</span>
         </h2>
-        <div class="card-subtitle">Distribution of heatwave days across calendar months</div>
+        <div class="card-subtitle">Distribution of heatwave days and mean temperature across calendar months</div>
       </div>
     </div>
     <div class="chart-container-wrapper" style="height:280px;">
@@ -157,25 +157,25 @@
         <span class="badge badge-extreme">Markov Dynamics</span>
       </div>
 
-      <div style="display:flex; flex-direction:column; gap:1.25rem; margin-top:1rem;">
-        <div style="background:rgba(17,24,39,0.8); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1rem;">
-          <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.25rem;">P(Heatwave tomorrow | Heatwave today)</div>
-          <div style="font-size:1.8rem; font-weight:800; color:#ef4444;">63.11%</div>
-          <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.25rem;">High thermal inertia locks extreme heat into consecutive multi-day spells.</div>
+      <div style="display:flex; flex-direction:column; gap:1rem; margin-top:0.85rem;">
+        <div style="background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:0.85rem 1rem;">
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.25rem; font-weight:600;">P(Heatwave tomorrow | Heatwave today)</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--risk-severe); line-height:1;">63.11%</div>
+          <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.35rem;">High thermal inertia locks extreme heat into consecutive multi-day spells.</div>
         </div>
 
-        <div style="background:rgba(17,24,39,0.8); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:1rem;">
-          <div style="font-size:0.8rem; color:var(--text-muted); margin-bottom:0.25rem;">P(Heatwave tomorrow | Normal day today)</div>
-          <div style="font-size:1.8rem; font-weight:800; color:#10b981;">0.36%</div>
-          <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.25rem;">Probability on any regular, non-heatwave day.</div>
+        <div style="background:var(--bg-subtle); border:1px solid var(--border-subtle); border-radius:var(--radius-md); padding:0.85rem 1rem;">
+          <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.25rem; font-weight:600;">P(Heatwave tomorrow | Normal day today)</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--risk-normal); line-height:1;">0.36%</div>
+          <div style="font-size:0.75rem; color:var(--text-secondary); margin-top:0.35rem;">Baseline background probability on any regular day.</div>
         </div>
       </div>
     </div>
 
-    <div style="background:rgba(249,115,22,0.12); border:1px solid rgba(249,115,22,0.3); border-radius:var(--radius-md); padding:0.85rem; margin-top:1rem; text-align:center;">
-      <div style="font-size:1.25rem; font-weight:800; color:#fb923c;">176.9× Autoregressive Multiplier</div>
-      <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:0.2rem;">
-        A heatwave today makes a heatwave tomorrow 176.9 times more likely. This physical persistence is captured by our lag features.
+    <div class="alert-box alert-warning" style="margin-top:1rem; text-align:center;">
+      <div style="font-size:1.15rem; font-weight:800; color:var(--risk-warning);">176.9× Autoregressive Persistence</div>
+      <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:0.25rem;">
+        A heatwave today makes a heatwave tomorrow 176.9 times more likely. Captured via our lag and rolling feature vectors.
       </div>
     </div>
   </div>
@@ -209,7 +209,7 @@
       <tbody id="records-table-body">
         <tr>
           <td colspan="7" style="text-align:center; padding:1.5rem; color:var(--text-muted);">
-            Loading 74-year record table...
+            Loading 74-year records table...
           </td>
         </tr>
       </tbody>
@@ -219,5 +219,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}?v=4.0"></script>
 {% endblock %}

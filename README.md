@@ -31,7 +31,8 @@ Extreme heat events pose grave threats to public health, agriculture, and munici
 - **Two-Stage Hybrid ML Engine:** Combines a continuous temperature departure regressor ($R^2 = 0.8690$, $\text{MAE} = 1.08^\circ\text{C}$) with an isotonically calibrated cost-sensitive LightGBM classifier ($\text{Brier} = 0.0164$, $\text{PR-AUC} = 0.6747$).
 - **Physics-Grounded IMD Severity Mapping:** Maps continuous departures to IMD risk tiers (`Normal`, `Warning`, `Severe`, `Extreme`) avoiding class-imbalance collapse on rare extremes.
 - **Multi-Stakeholder GenAI Advisories:** Translates verified ML predictions into hallucination-free, targeted actionable guidance for 4 distinct personas: **Citizens**, **Farmers**, **Health Agencies**, and **Municipal Authorities**.
-- **Interactive Web Platform:** Glassmorphism dashboard with Leaflet.js interactive geospatial map, Chart.js 74-year climate analytics, and a grounded context-aware meteorological chatbot.
+- **Interactive Grounded Chatbot (HeatGuard Copilot):** Conversational meteorological copilot powered by Gemini Flash (with zero-downtime deterministic fallback) supporting past/observed weather, forward predictions, 5-day autoregressive rolls, 7-day extended forecasts, 74-year historical climatology, and prompt-anchored UI scrolling.
+- **Dynamic Dual-Theme Web Platform:** High-contrast cyber dark mode and crisp light mode featuring Vice-Versa sidebar elevation, Leaflet.js interactive geospatial map, Chart.js 74-year climate analytics, and Counterfactual Climate Stress Simulator.
 
 ---
 
@@ -207,6 +208,7 @@ HeatGuard-AI/
 │   ├── css/style.css                    # Glassmorphism dark-mode styling
 │   └── js/                              # Interactive Leaflet & Chart.js controllers
 │
+├── test_suite.py                        # 16-suite end-to-end integration test runner
 ├── app.py                               # Flask application entrypoint
 ├── requirements.txt                     # Project dependencies
 ├── progress.md                          # Team progress tracker & work log
@@ -249,10 +251,16 @@ python models/train_baselines.py
 python models/train_hybrid.py
 ```
 
-### 4. Launch the Web Application:
+### 4. Run Full Integration Test Suite (16/16 Suites):
+```bash
+python test_suite.py
+```
+
+### 5. Launch the Web Application:
 ```bash
 python app.py
 ```
+Open your browser at `http://127.0.0.1:5000/`.
 Open your browser at `http://127.0.0.1:5000/`.
 
 ---

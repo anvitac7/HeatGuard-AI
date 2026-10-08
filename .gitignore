@@ -1,4 +1,28 @@
-# regenerable from preprocessing scripts (~59 MB) - do not commit
-data/model_ready_dataset.csv
+# Environment variables & secrets
+.env
+.env.local
+.env.*.local
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Python cache & build artifacts
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Large regenerable feature dataset (~59 MB - generated via python data_cleaning/feature_eng.py)
+data/model_ready_dataset.csv
+
+# IDE & OS files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+

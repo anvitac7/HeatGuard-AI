@@ -1,88 +1,87 @@
 {% extends "base.html" %}
 
-{% block title %}HeatGuard AI — Grounded Meteorological AI Assistant{% endblock %}
+{% block title %}HeatGuard AI — HeatGuard Copilot{% endblock %}
 
 {% block content %}
-<div class="glass-card" style="padding:1.25rem 1.5rem; margin-bottom:1rem;">
-  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
-    <div>
-      <h1 style="font-size: 1.35rem; font-weight: 800; display:flex; align-items:center; gap:0.5rem;">
-        <i data-feather="message-square" style="color:var(--accent-orange);"></i>
-        <span>HeatGuard Meteorological AI Assistant</span>
-      </h1>
-      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top:0.2rem;">
-        Grounded in our 74-year climatology (1951–2024), Two-Stage Hybrid ML inference, and IMD guidelines.
-      </p>
+<!-- Unified Single-Screen Full-Viewport Chat Frame -->
+<div class="glass-card chat-container">
+  <!-- Sleek Integrated Chat Header -->
+  <div class="chat-header">
+    <div style="display:flex; align-items:center; gap:0.65rem;">
+      <div style="width:34px; height:34px; border-radius:var(--radius-md); background:var(--brand-50); border:1px solid var(--brand-100); display:flex; align-items:center; justify-content:center; color:var(--brand-600); flex-shrink:0;">
+        <i data-feather="message-square" style="width:17px;height:17px;"></i>
+      </div>
+      <div>
+        <h1 style="font-size: 1.05rem; font-weight: 800; color:var(--text-primary); margin:0; line-height:1.2; display:flex; align-items:center; gap:0.4rem;">
+          <span>HeatGuard Copilot</span>
+        </h1>
+        <p style="font-size: 0.76rem; color: var(--text-muted); margin:0; line-height:1.2;">
+          Natural language meteorological assistant & 74-yr climate intelligence
+        </p>
+      </div>
     </div>
 
-    <!-- Active City & Date Context for the Chat -->
-    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
-      <div style="display:flex; align-items:center; gap:0.4rem;">
-        <label style="font-size:0.78rem; color:var(--text-secondary); font-weight:600;">Context City:</label>
-        <select id="chat-city-select" class="select-input" style="padding:0.4rem 0.75rem; font-size:0.8rem;">
-          {% for c in cities %}
-          <option value="{{ c.city }}" {% if c.city == 'Delhi' %}selected{% endif %}>{{ c.city }}</option>
-          {% endfor %}
-        </select>
-      </div>
-
-      <div style="display:flex; align-items:center; gap:0.4rem;">
-        <label style="font-size:0.78rem; color:var(--text-secondary); font-weight:600;">Date:</label>
-        <input type="date" id="chat-date-select" class="date-input" style="padding:0.35rem 0.65rem; font-size:0.8rem;" value="2024-05-28" min="1951-01-08" max="2024-06-21">
-      </div>
+    <!-- Active Features Badges -->
+    <div style="display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap;">
+      <span class="badge" style="background:var(--brand-50); color:var(--brand-700); border:1px solid var(--brand-100); padding:0.25rem 0.55rem; font-size:0.75rem;">
+        <i data-feather="map-pin" style="width:11px;height:11px;"></i> 7 Metros (1951–2024)
+      </span>
+      <span class="badge badge-normal" style="padding:0.25rem 0.55rem; font-size:0.75rem;">
+        <i data-feather="check-circle" style="width:11px;height:11px;"></i> Zero-Hallucination
+      </span>
     </div>
   </div>
-</div>
 
-<!-- Main Chat Container -->
-<div class="glass-card chat-container">
   <!-- Messages Scroll Area -->
   <div class="chat-messages" id="chat-messages">
     <!-- Initial Bot Greeting -->
     <div class="message-bubble message-bot">
-      <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; color:var(--accent-ember); font-weight:700; margin-bottom:0.4rem;">
-        <i data-feather="shield" style="width:14px;height:14px;"></i>
-        <span>HeatGuard AI Assistant</span>
+      <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.82rem; color:var(--brand-800); font-weight:700; margin-bottom:0.4rem;">
+        <i data-feather="shield" style="width:14px;height:14px; color:var(--brand-600);"></i>
+        <span>HeatGuard Copilot</span>
       </div>
       <div>
-        Hello! I am your operational heatwave risk assistant. I can help explain tomorrow's predictions for any of our 7 cities, evaluate IMD criteria, analyze 74 years of climate history, or suggest life-saving precautions.
+        Hello! I'm your meteorological copilot. You can ask me anything in plain conversational language about tomorrow's weather risks, city forecasts across our 7 covered Indian metros (e.g. <em>"What is the weather in Delhi tomorrow?"</em> or <em>"Any heatwave risk in Ahmedabad?"</em>), 74-year climate records, IMD threshold definitions, or safety precautions.
       </div>
       <div class="message-sources">
         <span>Verified Sources:</span>
-        <span class="source-tag">LightGBM Two-Stage Engine</span>
+        <span class="source-tag">Two-Stage Hybrid Engine</span>
         <span class="source-tag">IMD Guidelines</span>
-        <span class="source-tag">74-Year Historical Dataset</span>
+        <span class="source-tag">187,387 Daily Records (1951–2024)</span>
       </div>
     </div>
   </div>
 
-  <!-- Suggested Prompt Chips -->
+  <!-- Pinned Suggested Prompt Chips -->
   <div class="prompt-chips">
-    <button class="prompt-chip" data-prompt="Why is tomorrow's risk elevated for the selected city?">
-      🔥 Why is risk elevated?
+    <button class="prompt-chip" data-prompt="What is tomorrow's heatwave risk for Delhi?">
+      🔥 Delhi Tomorrow Risk
+    </button>
+    <button class="prompt-chip" data-prompt="Why did Ahmedabad reach 46.6°C extreme heatwave in May 2024?">
+      🏜️ Ahmedabad 46.6°C Extreme
+    </button>
+    <button class="prompt-chip" data-prompt="Why did Bengaluru have 0 heatwaves in 74 years?">
+      🌿 Bengaluru 0-Heatwave Record
     </button>
     <button class="prompt-chip" data-prompt="What are the official IMD heatwave criteria for plains vs coastal cities?">
-      🌡️ IMD Heatwave Criteria
+      🌡️ IMD Heatwave Rules
     </button>
     <button class="prompt-chip" data-prompt="How does the Two-Stage Hybrid ML engine predict extreme severity?">
       🧠 Two-Stage ML Architecture
     </button>
-    <button class="prompt-chip" data-prompt="Why did Bengaluru have 0 heatwaves in 74 years?">
-      🌿 Bengaluru Climatology
-    </button>
     <button class="prompt-chip" data-prompt="What precautions should outdoor construction workers take tomorrow?">
-      🛡️ Outdoor Worker Safety
+      🛡️ Worker Safety Guidance
     </button>
-    <button class="prompt-chip" data-prompt="What were the hottest recorded temperatures in Indian history?">
-      ☀️ Historical Record Peaks
+    <button class="prompt-chip" data-prompt="What were the all-time highest temperature records across India?">
+      ☀️ All-Time Peak Records
     </button>
   </div>
 
-  <!-- Chat Input Bar -->
+  <!-- Pinned Chat Input Bar -->
   <form id="chat-form" class="chat-input-bar">
-    <input type="text" id="chat-input" class="chat-input" placeholder="Ask about heatwave risks, IMD thresholds, historical records, or precautions..." autocomplete="off">
-    <button type="submit" class="btn btn-primary" id="chat-send-btn" style="padding:0.75rem 1.4rem;">
-      <i data-feather="send"></i>
+    <input type="text" id="chat-input" class="chat-input" placeholder="Ask in natural language about any city's weather, heatwave risk, IMD rules, or precautions..." autocomplete="off">
+    <button type="submit" class="btn btn-primary" id="chat-send-btn" style="padding:0.65rem 1.4rem;">
+      <i data-feather="send" style="width:15px;height:15px;"></i>
       <span>Send</span>
     </button>
   </form>
@@ -90,5 +89,5 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chat.js') }}?v=9.2"></script>
 {% endblock %}

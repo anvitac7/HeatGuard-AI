@@ -4,12 +4,39 @@
  * monthly seasonality distributions, and historical climate records using Chart.js.
  */
 
+let decadalChartInstance = null;
+let citiesChartInstance = null;
+let monthlyChartInstance = null;
+
 document.addEventListener("DOMContentLoaded", () => {
+  renderAllCharts();
+  loadRecordsTable();
+
+  // Re-render charts when dark/light theme is toggled
+  window.addEventListener("themechanged", () => {
+    renderAllCharts();
+  });
+});
+
+function renderAllCharts() {
   loadDecadalChart();
   loadCitiesChart();
   loadMonthlyChart();
-  loadRecordsTable();
-});
+}
+
+function getThemeColors() {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  return {
+    isDark,
+    gridColor: isDark ? "rgba(255, 255, 255, 0.08)" : "rgba(15, 23, 42, 0.05)",
+    tickColor: isDark ? "#94a3b8" : "#64748b",
+    headingColor: isDark ? "#f8fafc" : "#0f172a",
+    tooltipBg: isDark ? "#0f172a" : "#ffffff",
+    tooltipTitle: isDark ? "#f8fafc" : "#0f172a",
+    tooltipBody: isDark ? "#cbd5e1" : "#334155",
+    tooltipBorder: isDark ? "#334155" : "#e2e8f0",
+  };
+}
 
 // ----------------------------------------------------------------------------------------
 // 1. Decadal Heatwave Acceleration (Grouped Bar Chart)
@@ -25,8 +52,13 @@ async function loadDecadalChart() {
 
     const data = json.data;
     const ctx = canvas.getContext("2d");
+    const colors = getThemeColors();
 
-    new Chart(ctx, {
+    if (decadalChartInstance) {
+      decadalChartInstance.destroy();
+    }
+
+    decadalChartInstance = new Chart(ctx, {
       type: "bar",
       data: {
         labels: data.labels,
@@ -34,18 +66,18 @@ async function loadDecadalChart() {
           {
             label: "Total Heatwave Days",
             data: data.total_heatwave_days,
-            backgroundColor: data.labels.map(l => l.includes("2020") ? "rgba(249, 115, 22, 0.85)" : "rgba(0, 240, 255, 0.65)"),
-            borderColor: data.labels.map(l => l.includes("2020") ? "#f97316" : "#00f0ff"),
-            borderWidth: 1.8,
-            borderRadius: 6,
+            backgroundColor: data.labels.map(l => l.includes("2020") ? "#ea580c" : "#0d9488"),
+            borderColor: data.labels.map(l => l.includes("2020") ? "#c2410c" : "#0f766e"),
+            borderWidth: 1.2,
+            borderRadius: 4,
           },
           {
             label: "Severe Heatwave Days",
             data: data.severe_heatwave_days,
-            backgroundColor: data.labels.map(l => l.includes("2020") ? "rgba(239, 68, 68, 0.85)" : "rgba(239, 68, 68, 0.5)"),
-            borderColor: "#ef4444",
-            borderWidth: 1.8,
-            borderRadius: 6,
+            backgroundColor: "#dc2626",
+            borderColor: "#b91c1c",
+            borderWidth: 1.2,
+            borderRadius: 4,
           }
         ]
       },
@@ -55,24 +87,25 @@ async function loadDecadalChart() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: "rgba(3, 7, 18, 0.95)",
-            titleColor: "#00f0ff",
-            bodyColor: "#f8fafc",
-            borderColor: "rgba(0, 240, 255, 0.4)",
+            backgroundColor: colors.tooltipBg,
+            titleColor: colors.tooltipTitle,
+            bodyColor: colors.tooltipBody,
+            borderColor: colors.tooltipBorder,
             borderWidth: 1,
-            padding: 11,
-            cornerRadius: 8,
+            padding: 10,
+            cornerRadius: 6,
+            boxShadow: "0 4px 6px -1px rgba(0,0,0,0.2)",
           }
         },
         scales: {
           x: {
-            grid: { color: "rgba(0, 240, 255, 0.06)" },
-            ticks: { color: "#94a3b8" }
+            grid: { color: colors.gridColor },
+            ticks: { color: colors.tickColor, font: { size: 11 } }
           },
           y: {
-            grid: { color: "rgba(0, 240, 255, 0.06)" },
-            ticks: { color: "#94a3b8" },
-            title: { display: true, text: "Number of Days", color: "#64748b" }
+            grid: { color: colors.gridColor },
+            ticks: { color: colors.tickColor },
+            title: { display: true, text: "Number of Days", color: colors.tickColor, font: { size: 11 } }
           }
         }
       }
@@ -98,28 +131,33 @@ async function loadCitiesChart() {
     const cities = items.map(i => i.city);
     const counts = items.map(i => i.heatwave_days);
 
-    const colors = [
-      "#ef4444", // Delhi
-      "#f97316", // Ahmedabad
-      "#fb923c", // Chennai
-      "#f59e0b", // Kolkata
-      "#eab308", // Pune
-      "#06b6d4", // Mumbai
-      "#10b981", // Bengaluru
+    const barColors = [
+      "#dc2626", // Delhi
+      "#ea580c", // Ahmedabad
+      "#f59e0b", // Chennai
+      "#d97706", // Kolkata
+      "#0d9488", // Pune
+      "#0284c7", // Mumbai
+      "#16a34a", // Bengaluru
     ];
 
     const ctx = canvas.getContext("2d");
-    new Chart(ctx, {
+    const colors = getThemeColors();
+
+    if (citiesChartInstance) {
+      citiesChartInstance.destroy();
+    }
+
+    citiesChartInstance = new Chart(ctx, {
       type: "bar",
       data: {
         labels: cities,
         datasets: [{
           label: "Total Heatwave Days (1951–2024)",
           data: counts,
-          backgroundColor: colors.map(c => `${c}cc`),
-          borderColor: colors,
-          borderWidth: 1.5,
-          borderRadius: 6,
+          backgroundColor: barColors,
+          borderWidth: 0,
+          borderRadius: 4,
         }]
       },
       options: {
@@ -129,19 +167,23 @@ async function loadCitiesChart() {
         plugins: {
           legend: { display: false },
           tooltip: {
-            backgroundColor: "rgba(13, 19, 34, 0.95)",
+            backgroundColor: colors.tooltipBg,
+            titleColor: colors.tooltipTitle,
+            bodyColor: colors.tooltipBody,
+            borderColor: colors.tooltipBorder,
+            borderWidth: 1,
             padding: 10,
-            cornerRadius: 8,
+            cornerRadius: 6,
           }
         },
         scales: {
           x: {
-            grid: { color: "rgba(255, 255, 255, 0.05)" },
-            ticks: { color: "#94a3b8" }
+            grid: { color: colors.gridColor },
+            ticks: { color: colors.tickColor }
           },
           y: {
             grid: { display: false },
-            ticks: { color: "#f8fafc", font: { weight: "600" } }
+            ticks: { color: colors.headingColor, font: { weight: "600", size: 12 } }
           }
         }
       }
@@ -165,8 +207,13 @@ async function loadMonthlyChart() {
 
     const data = json.data;
     const ctx = canvas.getContext("2d");
+    const colors = getThemeColors();
 
-    new Chart(ctx, {
+    if (monthlyChartInstance) {
+      monthlyChartInstance.destroy();
+    }
+
+    monthlyChartInstance = new Chart(ctx, {
       type: "bar",
       data: {
         labels: data.months,
@@ -175,25 +222,23 @@ async function loadMonthlyChart() {
             type: "bar",
             label: "Heatwave Days Count",
             data: data.total_heatwave_days,
-            backgroundColor: "rgba(249, 115, 22, 0.7)",
-            borderColor: "#f97316",
-            borderWidth: 1.5,
-            borderRadius: 6,
+            backgroundColor: "#ea580c",
+            borderRadius: 4,
             yAxisID: "y",
           },
           {
             type: "line",
             label: "Average Max Temp (°C)",
             data: data.avg_max_temp,
-            borderColor: "#00f0ff",
-            backgroundColor: "rgba(0, 240, 255, 0.15)",
-            borderWidth: 2.8,
+            borderColor: colors.isDark ? "#2dd4bf" : "#0f766e",
+            backgroundColor: colors.isDark ? "rgba(45, 212, 191, 0.15)" : "rgba(15, 118, 110, 0.08)",
+            borderWidth: 2.2,
             tension: 0.35,
-            pointBackgroundColor: "#00f0ff",
-            pointBorderColor: "#fff",
+            pointBackgroundColor: colors.isDark ? "#2dd4bf" : "#0f766e",
+            pointBorderColor: colors.isDark ? "#0f172a" : "#ffffff",
             pointBorderWidth: 1.5,
-            pointRadius: 5,
-            pointHoverRadius: 8,
+            pointRadius: 4,
+            pointHoverRadius: 6,
             yAxisID: "y1",
           }
         ]
@@ -203,30 +248,32 @@ async function loadMonthlyChart() {
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            labels: { color: "#e0f2fe", font: { size: 11, weight: "bold" } }
+            display: true,
+            position: "top",
+            labels: { boxWidth: 12, font: { size: 11 }, color: colors.tickColor }
           },
           tooltip: {
-            backgroundColor: "rgba(3, 7, 18, 0.95)",
-            titleColor: "#00f0ff",
-            bodyColor: "#f8fafc",
-            borderColor: "rgba(0, 240, 255, 0.4)",
+            backgroundColor: colors.tooltipBg,
+            titleColor: colors.tooltipTitle,
+            bodyColor: colors.tooltipBody,
+            borderColor: colors.tooltipBorder,
             borderWidth: 1,
-            padding: 11,
-            cornerRadius: 8,
+            padding: 10,
+            cornerRadius: 6,
           }
         },
         scales: {
           x: {
-            grid: { color: "rgba(0, 240, 255, 0.06)" },
-            ticks: { color: "#94a3b8" }
+            grid: { color: colors.gridColor },
+            ticks: { color: colors.tickColor }
           },
           y: {
             type: "linear",
             display: true,
             position: "left",
-            grid: { color: "rgba(0, 240, 255, 0.06)" },
-            ticks: { color: "#94a3b8" },
-            title: { display: true, text: "Heatwave Days", color: "#f97316" }
+            grid: { color: colors.gridColor },
+            ticks: { color: "#ea580c" },
+            title: { display: true, text: "Heatwave Days", color: "#ea580c", font: { size: 11 } }
           },
           y1: {
             type: "linear",
@@ -234,21 +281,21 @@ async function loadMonthlyChart() {
             position: "right",
             grid: { drawOnChartArea: false },
             ticks: {
-              color: "#00f0ff",
+              color: colors.tickColor,
               callback: (val) => `${val}°C`
             },
-            title: { display: true, text: "Avg Temp (°C)", color: "#00f0ff" }
+            title: { display: true, text: "Avg Temp (°C)", color: colors.tickColor, font: { size: 11 } }
           }
         }
       }
     });
   } catch (err) {
-    console.error("Failed to load monthly chart:", err);
+    console.error("Failed to load monthly seasonality chart:", err);
   }
 }
 
 // ----------------------------------------------------------------------------------------
-// 4. All-Time Historical Records Table
+// 4. All-Time Historical Record Extremes Table
 // ----------------------------------------------------------------------------------------
 async function loadRecordsTable() {
   const tbody = document.getElementById("records-table-body");
@@ -257,31 +304,37 @@ async function loadRecordsTable() {
   try {
     const res = await fetch("/api/analytics/records");
     const json = await res.json();
-    if (json.status !== "success") return;
+    if (json.status !== "success") throw new Error(json.message || "Failed to fetch records");
 
-    const records = json.data;
+    const records = Array.isArray(json.data) ? json.data : (json.data?.records || json.records || []);
     tbody.innerHTML = "";
 
-    records.forEach((r, idx) => {
+    if (!records || records.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="color:var(--text-muted); padding:1.5rem; text-align:center;">No records found.</td></tr>`;
+      return;
+    }
+
+    records.forEach((rec, idx) => {
       const tr = document.createElement("tr");
 
-      let badgeClass = "badge-warning";
-      if (r.severity === "Severe") badgeClass = "badge-severe";
-      if (r.severity === "Extreme") badgeClass = "badge-extreme";
+      let badgeClass = "badge-normal";
+      if (rec.severity === "Extreme") badgeClass = "badge-extreme";
+      else if (rec.severity === "Severe") badgeClass = "badge-severe";
+      else if (rec.severity === "Warning") badgeClass = "badge-warning";
 
       tr.innerHTML = `
-        <td><strong style="color:var(--accent-orange); font-size:0.95rem;">#${idx + 1}</strong></td>
-        <td><strong style="color:var(--text-primary); font-size:0.95rem;">${r.city}</strong></td>
-        <td>${r.date}</td>
-        <td><strong style="font-size:1.05rem; color:#fff;">${r.temp_max.toFixed(2)}°C</strong></td>
-        <td>${r.threshold.toFixed(2)}°C</td>
-        <td><strong style="color:#f87171;">+${r.departure.toFixed(2)}°C</strong></td>
-        <td><span class="badge ${badgeClass}">${r.severity}</span></td>
+        <td style="font-weight:700; color:var(--text-muted);">#${idx + 1}</td>
+        <td style="font-weight:600; color:var(--text-primary);">${rec.city}</td>
+        <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-secondary);">${rec.date}</td>
+        <td><strong style="color:var(--risk-warning); font-size:0.95rem;">${rec.temp_max.toFixed(2)}°C</strong></td>
+        <td style="color:var(--text-secondary);">${rec.threshold.toFixed(2)}°C</td>
+        <td><strong style="color:${rec.departure >= 4.0 ? 'var(--risk-severe)' : (rec.departure >= 2.0 ? 'var(--risk-warning)' : 'var(--risk-moderate)')};">+${rec.departure.toFixed(2)}°C</strong></td>
+        <td><span class="badge ${badgeClass}">${rec.severity}</span></td>
       `;
       tbody.appendChild(tr);
     });
   } catch (err) {
     console.error("Failed to load records table:", err);
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#ef4444;">Failed to load records.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="color:#ef4444; padding:1.5rem; text-align:center;">Failed to load historical records.</td></tr>`;
   }
 }
