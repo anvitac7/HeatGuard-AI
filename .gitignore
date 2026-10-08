@@ -20,6 +20,9 @@ __pycache__/
 # Large regenerable feature dataset (~59 MB - generated via python data_cleaning/feature_eng.py)
 data/model_ready_dataset.csv
 
+# Temporary scratch scripts
+scratch/
+
 # IDE & OS files
 .DS_Store
 Thumbs.db
