@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}HeatGuard AI — Operational Heatwave Risk Platform{% endblock %}</title>
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Feather Icons CDN -->
+  <script src="https://unpkg.com/feather-icons"></script>
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Leaflet Heat Plugin -->
+  <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- App Stylesheet -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="nav-container">
+      <a href="{{ url_for('dashboard_view') }}" class="brand-wrapper">
+        <div class="brand-icon">
+          <i data-feather="shield"></i>
+        </div>
+        <div class="brand-text">
+          <h1>HeatGuard AI</h1>
+          <div class="subtext">Operational Heatwave Risk & GenAI Advisory</div>
+        </div>
+      </a>
+
+      <!-- Main Navigation -->
+      <nav class="main-nav">
+        <a href="{{ url_for('dashboard_view') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}">
+          <i data-feather="activity"></i>
+          <span>Command Center</span>
+        </a>
+        <a href="{{ url_for('analytics_view') }}" class="nav-link {% if active_page == 'analytics' %}active{% endif %}">
+          <i data-feather="bar-chart-2"></i>
+          <span>74-Yr Analytics</span>
+        </a>
+        <a href="{{ url_for('advisory_view') }}" class="nav-link {% if active_page == 'advisory' %}active{% endif %}">
+          <i data-feather="file-text"></i>
+          <span>Advisory Studio</span>
+        </a>
+        <a href="{{ url_for('chatbot_view') }}" class="nav-link {% if active_page == 'chatbot' %}active{% endif %}">
+          <i data-feather="message-square"></i>
+          <span>AI Assistant</span>
+        </a>
+      </nav>
+
+      <!-- Right Header Status -->
+      <div class="nav-right">
+        <div class="status-pill" title="Production Model: LightGBM Two-Stage Hybrid (97.68% Test Accuracy, 0.6747 PR-AUC)">
+          <div class="status-dot"></div>
+          <span>Two-Stage Hybrid Online</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Viewport Content -->
+  <main class="main-content">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Floating Chat Assistant Button (Available across all pages) -->
+  {% if active_page != 'chatbot' %}
+  <a href="{{ url_for('chatbot_view') }}" class="floating-chat-btn" title="Ask HeatGuard AI Assistant">
+    <i data-feather="message-circle"></i>
+  </a>
+  {% endif %}
+
+  <!-- Site Footer -->
+  <footer class="site-footer">
+    <div class="footer-container">
+      <div>
+        <strong>HeatGuard AI</strong> — Built on 74-Year Climatological Dataset (1951–2024, 187,387 records).
+      </div>
+      <div>
+        Models: LightGBM Huber Departure Regressor + Isotonic Calibrated Classifier | Grounding: Zero-Hallucination Framework
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize feather icons
+    document.addEventListener("DOMContentLoaded", () => {
+      feather.replace();
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

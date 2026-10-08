@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}HeatGuard AI — Grounded Meteorological AI Assistant{% endblock %}
+
+{% block content %}
+<div class="glass-card" style="padding:1.25rem 1.5rem; margin-bottom:1rem;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1 style="font-size: 1.35rem; font-weight: 800; display:flex; align-items:center; gap:0.5rem;">
+        <i data-feather="message-square" style="color:var(--accent-orange);"></i>
+        <span>HeatGuard Meteorological AI Assistant</span>
+      </h1>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-top:0.2rem;">
+        Grounded in our 74-year climatology (1951–2024), Two-Stage Hybrid ML inference, and IMD guidelines.
+      </p>
+    </div>
+
+    <!-- Active City & Date Context for the Chat -->
+    <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+      <div style="display:flex; align-items:center; gap:0.4rem;">
+        <label style="font-size:0.78rem; color:var(--text-secondary); font-weight:600;">Context City:</label>
+        <select id="chat-city-select" class="select-input" style="padding:0.4rem 0.75rem; font-size:0.8rem;">
+          {% for c in cities %}
+          <option value="{{ c.city }}" {% if c.city == 'Delhi' %}selected{% endif %}>{{ c.city }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:0.4rem;">
+        <label style="font-size:0.78rem; color:var(--text-secondary); font-weight:600;">Date:</label>
+        <input type="date" id="chat-date-select" class="date-input" style="padding:0.35rem 0.65rem; font-size:0.8rem;" value="2024-05-28" min="1951-01-08" max="2024-06-21">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Chat Container -->
+<div class="glass-card chat-container">
+  <!-- Messages Scroll Area -->
+  <div class="chat-messages" id="chat-messages">
+    <!-- Initial Bot Greeting -->
+    <div class="message-bubble message-bot">
+      <div style="display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; color:var(--accent-ember); font-weight:700; margin-bottom:0.4rem;">
+        <i data-feather="shield" style="width:14px;height:14px;"></i>
+        <span>HeatGuard AI Assistant</span>
+      </div>
+      <div>
+        Hello! I am your operational heatwave risk assistant. I can help explain tomorrow's predictions for any of our 7 cities, evaluate IMD criteria, analyze 74 years of climate history, or suggest life-saving precautions.
+      </div>
+      <div class="message-sources">
+        <span>Verified Sources:</span>
+        <span class="source-tag">LightGBM Two-Stage Engine</span>
+        <span class="source-tag">IMD Guidelines</span>
+        <span class="source-tag">74-Year Historical Dataset</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Suggested Prompt Chips -->
+  <div class="prompt-chips">
+    <button class="prompt-chip" data-prompt="Why is tomorrow's risk elevated for the selected city?">
+      🔥 Why is risk elevated?
+    </button>
+    <button class="prompt-chip" data-prompt="What are the official IMD heatwave criteria for plains vs coastal cities?">
+      🌡️ IMD Heatwave Criteria
+    </button>
+    <button class="prompt-chip" data-prompt="How does the Two-Stage Hybrid ML engine predict extreme severity?">
+      🧠 Two-Stage ML Architecture
+    </button>
+    <button class="prompt-chip" data-prompt="Why did Bengaluru have 0 heatwaves in 74 years?">
+      🌿 Bengaluru Climatology
+    </button>
+    <button class="prompt-chip" data-prompt="What precautions should outdoor construction workers take tomorrow?">
+      🛡️ Outdoor Worker Safety
+    </button>
+    <button class="prompt-chip" data-prompt="What were the hottest recorded temperatures in Indian history?">
+      ☀️ Historical Record Peaks
+    </button>
+  </div>
+
+  <!-- Chat Input Bar -->
+  <form id="chat-form" class="chat-input-bar">
+    <input type="text" id="chat-input" class="chat-input" placeholder="Ask about heatwave risks, IMD thresholds, historical records, or precautions..." autocomplete="off">
+    <button type="submit" class="btn btn-primary" id="chat-send-btn" style="padding:0.75rem 1.4rem;">
+      <i data-feather="send"></i>
+      <span>Send</span>
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+{% endblock %}
