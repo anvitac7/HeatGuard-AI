@@ -24,7 +24,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, send_from_directory
 from werkzeug.exceptions import HTTPException
 
 from services.analytics_service import AnalyticsService
@@ -44,6 +44,23 @@ app = Flask(
     static_folder=str(BASE_DIR / "static"),
 )
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "heatguard-ai-secret-2026")
+
+
+@app.route("/static/<path:filename>")
+def serve_static(filename):
+    """Explicit static file server with multi-environment directory resolution."""
+    candidates = [
+        BASE_DIR / "static",
+        BASE_DIR / "public" / "static",
+        Path.cwd() / "static",
+        Path.cwd() / "public" / "static",
+        Path(os.environ.get("LAMBDA_TASK_ROOT", "/var/task")) / "static",
+        Path("/var/task") / "static",
+    ]
+    for c in candidates:
+        if (c / filename).exists():
+            return send_from_directory(str(c), filename)
+    return jsonify({"error": f"Static asset {filename} not found"}), 404
 
 
 class StripApiPrefixMiddleware:

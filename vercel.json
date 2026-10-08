@@ -2,7 +2,7 @@
   "functions": {
     "api/index.py": {
       "maxDuration": 60,
-      "includeFiles": "templates/**,static/**,data/heatguard_clean.csv,models/saved/hybrid_predictor.pkl"
+      "includeFiles": "templates/**,static/**,public/**,data/heatguard_clean.csv,models/saved/hybrid_predictor.pkl"
     }
   },
   "rewrites": [
