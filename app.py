@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Any, Dict
 
 from flask import Flask, jsonify, render_template, request
+from werkzeug.exceptions import HTTPException
 
 from services.analytics_service import AnalyticsService
 from services.genai_service import GenAIService
@@ -43,6 +44,27 @@ app = Flask(
     static_folder=str(BASE_DIR / "static"),
 )
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "heatguard-ai-secret-2026")
+
+
+class StripApiPrefixMiddleware:
+    """WSGI middleware to normalize PATH_INFO from Vercel serverless rewrites."""
+
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        path_info = environ.get("PATH_INFO", "")
+        for prefix in ["/api/index.py", "/api/index"]:
+            if path_info == prefix or path_info == prefix + "/":
+                environ["PATH_INFO"] = "/"
+                break
+            elif path_info.startswith(prefix + "/"):
+                environ["PATH_INFO"] = path_info[len(prefix):]
+                break
+        return self.wsgi_app(environ, start_response)
+
+
+app.wsgi_app = StripApiPrefixMiddleware(app.wsgi_app)
 
 # Lazy-loaded services
 _pred_service: PredictionService = None
@@ -76,6 +98,8 @@ def get_genai_service() -> GenAIService:
 # ----------------------------------------------------------------------------------------
 @app.route("/")
 @app.route("/dashboard")
+@app.route("/api/index")
+@app.route("/api/index.py")
 def dashboard_view():
     """Live Heatwave Command Center."""
     pred_svc = get_prediction_service()
@@ -452,6 +476,8 @@ def api_export_city(city: str):
 @app.errorhandler(Exception)
 def handle_unexpected_error(e):
     """Returns JSON error with diagnostic details instead of unhandled crash."""
+    if isinstance(e, HTTPException):
+        return e
     import traceback
     log.exception("Unhandled server exception: %s", e)
     return jsonify({
