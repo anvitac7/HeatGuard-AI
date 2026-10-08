@@ -122,11 +122,13 @@ def dashboard_view():
     pred_svc = get_prediction_service()
     cities = pred_svc.get_cities()
     presets = pred_svc.get_demo_presets()
+    initial_data = pred_svc.predict_city("Delhi", "2024-05-28")
     return render_template(
         "dashboard.html",
         active_page="dashboard",
         cities=cities,
         presets=presets,
+        initial_data=initial_data,
     )
 
 

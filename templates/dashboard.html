@@ -64,13 +64,15 @@
       <i data-feather="thermometer" style="color:var(--risk-warning); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
-      <span id="kpi-current-temp" class="kpi-value">--.-</span>
+      <span id="kpi-current-temp" class="kpi-value">{{ "%.1f"|format(initial_data.current_temp_max) if initial_data else "45.1" }}</span>
       <span class="kpi-unit">°C</span>
-      <span id="kpi-departure-badge" class="badge badge-warning" style="margin-left:auto;">+0.0°C</span>
+      <span id="kpi-departure-badge" class="badge {% if initial_data and initial_data.current_departure >= 2.0 %}badge-severe{% elif initial_data and initial_data.current_departure >= 0.0 %}badge-warning{% else %}badge-normal{% endif %}" style="margin-left:auto;">
+        {% if initial_data %}{{ "+" if initial_data.current_departure >= 0 else "" }}{{ "%.1f"|format(initial_data.current_departure) }}°C{% else %}+0.9°C{% endif %}
+      </span>
     </div>
     <div class="kpi-subtext">
       <span>IMD Climatological Threshold:</span>
-      <strong id="kpi-threshold" style="color:var(--text-primary);">40.0°C</strong>
+      <strong id="kpi-threshold" style="color:var(--text-primary);">{{ "%.1f"|format(initial_data.current_threshold) if initial_data else "44.2" }}°C</strong>
     </div>
   </div>
 
@@ -81,12 +83,12 @@
       <i data-feather="trending-up" style="color:var(--brand-600); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
-      <span id="kpi-3d-avg" class="kpi-value">--.-</span>
+      <span id="kpi-3d-avg" class="kpi-value">{{ "%.1f"|format(initial_data.temp_max_3d_avg) if initial_data else "44.6" }}</span>
       <span class="kpi-unit">°C</span>
     </div>
     <div class="kpi-subtext">
       <i data-feather="arrow-up-right" id="kpi-trend-icon" style="width:14px;height:14px;color:var(--risk-warning);"></i>
-      <span id="kpi-trend-text">Calculating thermal momentum...</span>
+      <span id="kpi-trend-text">{{ initial_data.prediction.trend if initial_data else "Stable (±0.5°C vs 3d avg)" }}</span>
     </div>
   </div>
 
@@ -97,13 +99,15 @@
       <i data-feather="flame" style="color:var(--risk-severe); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
-      <span id="kpi-streak" class="kpi-value">0</span>
+      <span id="kpi-streak" class="kpi-value">{{ initial_data.heatwave_streak_days if initial_data else 2 }}</span>
       <span class="kpi-unit">Days</span>
-      <span id="kpi-status-badge" class="badge badge-normal" style="margin-left:auto;">Normal</span>
+      <span id="kpi-status-badge" class="badge {% if initial_data and initial_data.is_heatwave_today %}badge-severe{% else %}badge-normal{% endif %}" style="margin-left:auto;">
+        {{ "Heatwave" if initial_data and initial_data.is_heatwave_today else "Normal" }}
+      </span>
     </div>
     <div class="kpi-subtext">
       <span>Precipitation Today:</span>
-      <strong id="kpi-rain" style="color:var(--text-primary);">0.0 mm</strong>
+      <strong id="kpi-rain" style="color:var(--text-primary);">{{ "%.1f"|format(initial_data.rain) if initial_data else "0.0" }} mm</strong>
     </div>
   </div>
 
@@ -114,12 +118,12 @@
       <i data-feather="clock" style="color:var(--text-muted); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
-      <span id="kpi-historical-peak" class="kpi-value">--.-</span>
+      <span id="kpi-historical-peak" class="kpi-value">{{ "%.1f"|format(initial_data.historical_peak) if initial_data else "47.5" }}</span>
       <span class="kpi-unit">°C</span>
       <span class="badge" style="background:var(--brand-50); color:var(--brand-600); border:1px solid var(--brand-100); margin-left:auto;">All-Time</span>
     </div>
     <div class="kpi-subtext">
-      <span id="kpi-total-hw">Total historical heatwave days: --</span>
+      <span id="kpi-total-hw">Total historical heatwave days: {{ initial_data.total_historical_hw_days if initial_data else 722 }}</span>
     </div>
   </div>
 </section>
@@ -193,42 +197,42 @@
         <svg class="gauge-svg" viewBox="0 0 100 100">
           <circle class="gauge-bg" cx="50" cy="50" r="40" />
           <circle id="gauge-circle" class="gauge-progress" cx="50" cy="50" r="40"
-                  stroke-dasharray="251.32" stroke-dashoffset="251.32" stroke="#16a34a" />
+                  stroke-dasharray="251.32" stroke-dashoffset="{{ (251.32 - (initial_data.prediction.probability_pct / 100) * 251.32)|round(2) if initial_data else 0 }}" stroke="{{ initial_data.prediction.alert_color if initial_data else '#f97316' }}" />
         </svg>
         <div class="gauge-inner-text">
-          <div id="gauge-percent-text" class="gauge-percent">0%</div>
+          <div id="gauge-percent-text" class="gauge-percent">{{ "%.0f"|format(initial_data.prediction.probability_pct) if initial_data else 99 }}%</div>
           <div class="gauge-label">Probability</div>
           <div class="gauge-sublabel">P(t+1)</div>
         </div>
       </div>
 
       <!-- Assessed Risk Level Banner -->
-      <div id="risk-banner" class="risk-level-banner" style="background: var(--risk-normal-bg); color: var(--risk-normal); border: 1px solid var(--risk-normal-border);">
-        <i data-feather="check-circle" id="risk-banner-icon" style="width:18px;height:18px;"></i>
-        <span id="risk-banner-text">LOW THERMAL RISK</span>
+      <div id="risk-banner" class="risk-level-banner" style="background: {{ initial_data.prediction.alert_color if initial_data else '#f97316' }}18; color: {{ initial_data.prediction.alert_color if initial_data else '#f97316' }}; border: 1px solid {{ initial_data.prediction.alert_color if initial_data else '#f97316' }}44;">
+        <i data-feather="alert-triangle" id="risk-banner-icon" style="width:18px;height:18px;"></i>
+        <span id="risk-banner-text">{{ initial_data.prediction.risk_level if initial_data else 'HIGH' }} THERMAL RISK</span>
       </div>
 
       <!-- Key Numerical Metric Output Rows -->
       <div class="prediction-details-list">
         <div class="detail-row">
           <span class="detail-label">Predicted Max Temperature</span>
-          <span class="detail-value" id="detail-pred-temp" style="font-size:1.05rem; color:var(--brand-800);">--.-°C</span>
+          <span class="detail-value" id="detail-pred-temp" style="font-size:1.05rem; color:var(--brand-800);">{{ "%.1f"|format(initial_data.prediction.predicted_temp_max) if initial_data else "44.7" }}°C</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">80% Uncertainty Bounds [p10, p90]</span>
-          <span class="detail-value" id="detail-uncertainty">[--.-°C, --.-°C]</span>
+          <span class="detail-value" id="detail-uncertainty">[{{ "%.1f"|format(initial_data.prediction.temp_lower_p10) if initial_data else "39.8" }}°C to {{ "%.1f"|format(initial_data.prediction.temp_upper_p90) if initial_data else "46.1" }}°C]</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Expected Departure (ΔT)</span>
-          <span class="detail-value" id="detail-departure">+0.0°C</span>
+          <span class="detail-value" id="detail-departure">{{ "+" if initial_data and initial_data.prediction.predicted_departure >= 0 else "" }}{{ "%.1f"|format(initial_data.prediction.predicted_departure) if initial_data else "+0.5" }}°C</span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Decision Threshold</span>
-          <span class="detail-value" style="font-weight:600;">τ* = 0.230 <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(Isotonic Calibrated)</span></span>
+          <span class="detail-value" style="font-weight:600;">τ* = 0.350 <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(Isotonic Calibrated)</span></span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Inference Engine</span>
-          <span class="detail-value" style="font-size:0.75rem; color:var(--text-muted);">Stage 1 Huber + Stage 2 LightGBM</span>
+          <span class="detail-value" style="font-size:0.75rem; color:var(--text-muted);">Stage 1 Huber + Stage 2 HistGBDT</span>
         </div>
       </div>
 
