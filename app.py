@@ -27,6 +27,15 @@ if sys.platform == "win32":
         _svm_mock.LinearSVC = type("LinearSVC", (), {})
         sys.modules["sklearn.svm"] = _svm_mock
 
+# NumPy 1.x <-> 2.x unpickling cross-version compatibility bridge
+try:
+    import numpy as np
+    if not hasattr(np, "_core") and hasattr(np, "core"):
+        sys.modules["numpy._core"] = np.core
+        sys.modules["numpy._core.multiarray"] = np.core.multiarray
+except Exception:
+    pass
+
 import logging
 import os
 from pathlib import Path
