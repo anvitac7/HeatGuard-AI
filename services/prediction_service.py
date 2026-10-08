@@ -16,16 +16,26 @@ import pandas as pd
 
 from models.hybrid_engine import TwoStageHeatwavePredictor
 
+import os
+
 log = logging.getLogger("prediction_service")
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-DATA_PATH = REPO_ROOT / "data" / "heatguard_clean.csv"
-if not DATA_PATH.exists():
-    DATA_PATH = Path.cwd() / "data" / "heatguard_clean.csv"
+def resolve_asset_path(relative_subpath: str) -> Path:
+    """Finds asset path across local dev, AWS Lambda, and Vercel serverless environments."""
+    candidates = [
+        Path(__file__).resolve().parent.parent / relative_subpath,
+        Path.cwd() / relative_subpath,
+        Path(os.environ.get("LAMBDA_TASK_ROOT", "/var/task")) / relative_subpath,
+        Path("/var/task") / relative_subpath,
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return Path(__file__).resolve().parent.parent / relative_subpath
 
-MODEL_PATH = REPO_ROOT / "models" / "saved" / "hybrid_predictor.pkl"
-if not MODEL_PATH.exists():
-    MODEL_PATH = Path.cwd() / "models" / "saved" / "hybrid_predictor.pkl"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DATA_PATH = resolve_asset_path("data/heatguard_clean.csv")
+MODEL_PATH = resolve_asset_path("models/saved/hybrid_predictor.pkl")
 
 CITIES = ["Ahmedabad", "Bengaluru", "Chennai", "Delhi", "Kolkata", "Mumbai", "Pune"]
 SEASONS = ["Monsoon", "Post-Monsoon", "Summer", "Winter"]

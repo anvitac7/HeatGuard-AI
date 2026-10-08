@@ -8,6 +8,7 @@ and historical climate records for the Analytics Explorer.
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -16,10 +17,21 @@ import pandas as pd
 
 log = logging.getLogger("analytics_service")
 
+def resolve_asset_path(relative_subpath: str) -> Path:
+    """Finds asset path across local dev, AWS Lambda, and Vercel serverless environments."""
+    candidates = [
+        Path(__file__).resolve().parent.parent / relative_subpath,
+        Path.cwd() / relative_subpath,
+        Path(os.environ.get("LAMBDA_TASK_ROOT", "/var/task")) / relative_subpath,
+        Path("/var/task") / relative_subpath,
+    ]
+    for p in candidates:
+        if p.exists():
+            return p
+    return Path(__file__).resolve().parent.parent / relative_subpath
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DATA_PATH = REPO_ROOT / "data" / "heatguard_clean.csv"
-if not DATA_PATH.exists():
-    DATA_PATH = Path.cwd() / "data" / "heatguard_clean.csv"
+DATA_PATH = resolve_asset_path("data/heatguard_clean.csv")
 
 
 class AnalyticsService:

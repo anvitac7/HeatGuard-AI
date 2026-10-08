@@ -448,6 +448,20 @@ def api_export_city(city: str):
 
 
 
+@app.errorhandler(500)
+@app.errorhandler(Exception)
+def handle_unexpected_error(e):
+    """Returns JSON error with diagnostic details instead of unhandled crash."""
+    import traceback
+    log.exception("Unhandled server exception: %s", e)
+    return jsonify({
+        "status": "error",
+        "error_type": type(e).__name__,
+        "message": str(e),
+        "traceback": traceback.format_exc(),
+    }), 500
+
+
 # ----------------------------------------------------------------------------------------
 # Application Startup
 # ----------------------------------------------------------------------------------------
