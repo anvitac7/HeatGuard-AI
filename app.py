@@ -10,21 +10,22 @@ from __future__ import annotations
 import sys
 import types
 
-# Windows Application Control safety guard: bypass unused Cython DLLs
-for _mod in [
-    "scipy.integrate._vode",
-    "_vode",
-    "sklearn.svm._libsvm",
-    "sklearn.svm._liblinear",
-    "sklearn.svm._libsvm_sparse",
-]:
-    if _mod not in sys.modules:
-        sys.modules[_mod] = types.ModuleType(_mod)
+# Windows Application Control safety guard: bypass unused Cython DLLs on Windows only
+if sys.platform == "win32":
+    for _mod in [
+        "scipy.integrate._vode",
+        "_vode",
+        "sklearn.svm._libsvm",
+        "sklearn.svm._liblinear",
+        "sklearn.svm._libsvm_sparse",
+    ]:
+        if _mod not in sys.modules:
+            sys.modules[_mod] = types.ModuleType(_mod)
 
-if "sklearn.svm" not in sys.modules:
-    _svm_mock = types.ModuleType("sklearn.svm")
-    _svm_mock.LinearSVC = type("LinearSVC", (), {})
-    sys.modules["sklearn.svm"] = _svm_mock
+    if "sklearn.svm" not in sys.modules:
+        _svm_mock = types.ModuleType("sklearn.svm")
+        _svm_mock.LinearSVC = type("LinearSVC", (), {})
+        sys.modules["sklearn.svm"] = _svm_mock
 
 import logging
 import os
@@ -43,7 +44,12 @@ logging.basicConfig(
 )
 log = logging.getLogger("heatguard_app")
 
-app = Flask(__name__)
+BASE_DIR = Path(__file__).resolve().parent
+app = Flask(
+    __name__,
+    template_folder=str(BASE_DIR / "templates"),
+    static_folder=str(BASE_DIR / "static"),
+)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "heatguard-ai-secret-2026")
 
 # Lazy-loaded services

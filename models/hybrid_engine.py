@@ -17,21 +17,22 @@ import types
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-# Windows Application Control safety guard: bypass unused Cython DLLs
-for _mod in [
-    "scipy.integrate._vode",
-    "_vode",
-    "sklearn.svm._libsvm",
-    "sklearn.svm._liblinear",
-    "sklearn.svm._libsvm_sparse",
-]:
-    if _mod not in sys.modules:
-        sys.modules[_mod] = types.ModuleType(_mod)
+# Windows Application Control safety guard: bypass unused Cython DLLs on Windows only
+if sys.platform == "win32":
+    for _mod in [
+        "scipy.integrate._vode",
+        "_vode",
+        "sklearn.svm._libsvm",
+        "sklearn.svm._liblinear",
+        "sklearn.svm._libsvm_sparse",
+    ]:
+        if _mod not in sys.modules:
+            sys.modules[_mod] = types.ModuleType(_mod)
 
-if "sklearn.svm" not in sys.modules:
-    _svm_mock = types.ModuleType("sklearn.svm")
-    _svm_mock.LinearSVC = type("LinearSVC", (), {})
-    sys.modules["sklearn.svm"] = _svm_mock
+    if "sklearn.svm" not in sys.modules:
+        _svm_mock = types.ModuleType("sklearn.svm")
+        _svm_mock.LinearSVC = type("LinearSVC", (), {})
+        sys.modules["sklearn.svm"] = _svm_mock
 
 import joblib
 import lightgbm as lgb

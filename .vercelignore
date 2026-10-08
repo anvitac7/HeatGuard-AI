@@ -1,0 +1,14 @@
+.git
+.github
+venv/
+env/
+.venv/
+__pycache__/
+*.pyc
+*.ipynb
+notebooks/
+data/heatguard_raw.csv
+data/model_ready_dataset.csv
+.pytest_cache/
+.vscode/
+.idea/

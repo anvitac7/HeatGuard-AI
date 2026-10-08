@@ -18,6 +18,8 @@ log = logging.getLogger("analytics_service")
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DATA_PATH = REPO_ROOT / "data" / "heatguard_clean.csv"
+if not DATA_PATH.exists():
+    DATA_PATH = Path.cwd() / "data" / "heatguard_clean.csv"
 
 
 class AnalyticsService:

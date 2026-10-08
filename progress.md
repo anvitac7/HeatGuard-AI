@@ -37,9 +37,10 @@ HeatGuard AI predicts **next-day heatwaves ($t+1$)** for 7 Indian cities and tur
 | 5 | Flask REST backend | `[x]` Done | `app.py`, `requirements.txt`, `services/prediction_service.py`, `services/analytics_service.py`, `services/genai_service.py` |
 | 6 | Dashboard, Leaflet map, analytics UI | `[x]` Done | `templates/dashboard.html`, `templates/index.html`, `templates/analytics.html`, `static/css/style.css`, `static/js/dashboard.js`, `static/js/charts.js` |
 | 7 | GenAI advisory + chatbot | `[x]` Done | 4 Persona prompts (Citizen, Farmer, Health, Municipality), `templates/advisory.html`, `templates/chatbot.html`, `static/js/advisory.js`, `static/js/chat.js` |
-| 8 | Integration, verification, demo | `[x]` Done | End-to-end integration test (`scratch/test_app.py` passed 100%), verified Pune, Delhi, Ahmedabad scenarios |
+| 8 | Integration, verification, demo | `[x]` Done | End-to-end integration test (`test_suite.py` passed 100%), verified Pune, Delhi, Ahmedabad scenarios |
+| 9 | Cloud & Vercel Serverless Deployment | `[x]` Done | `api/index.py`, `vercel.json` rewrites, `.vercelignore`, Linux/Windows cross-platform safety guards |
 
-**Completion:** All 9 of 9 phases complete (Full-Stack Machine Learning, Climatology, GenAI Advisory, and Interactive Web Platform 100% operational).
+**Completion:** All 10 phases complete (Full-Stack Machine Learning, Climatology, GenAI Advisory, Interactive Web Platform, and Vercel Serverless Cloud Deployment 100% operational).
 
 ---
 
