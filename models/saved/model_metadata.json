@@ -1,6 +1,12 @@
 {
   "model_type": "TwoStageHeatwavePredictor",
-  "optimal_threshold": 0.23,
+  "optimal_threshold": 0.35,
+  "classifier": "sklearn.ensemble.HistGradientBoostingClassifier",
+  "classifier_class_weight": "balanced",
+  "departure_regressor": "sklearn.ensemble.HistGradientBoostingRegressor",
+  "departure_loss": "squared_error",
+  "uncertainty_regressors": "HistGradientBoostingRegressor quantile heads at 0.10 and 0.90",
+  "probability_calibration": "not applied",
   "feature_columns": [
     "temp_max",
     "temp_min",
@@ -48,9 +54,17 @@
     "threshold_next_day",
     "gap_to_next_threshold"
   ],
-  "test_pr_auc": 0.6747,
-  "test_roc_auc": 0.9671,
-  "test_f1_hw": 0.6643,
-  "test_reg_rmse": 1.5257,
-  "test_reg_r2": 0.869
+  "test_accuracy": 0.9618,
+  "test_balanced_accuracy": 0.9438,
+  "test_pr_auc": 0.7294,
+  "test_roc_auc": 0.9818,
+  "test_f1_hw": 0.6125,
+  "test_precision": 0.4579,
+  "test_recall": 0.9245,
+  "test_brier_score": 0.0263,
+  "test_reg_rmse": 1.4899,
+  "test_reg_mae": 1.07,
+  "test_reg_r2": 0.8751,
+  "test_evaluation_date": "2026-10-09",
+  "test_split": "2021-2024"
 }

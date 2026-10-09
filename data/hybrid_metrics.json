@@ -1,94 +1,42 @@
 {
-  "training_time_seconds": 25.53,
-  "optimal_threshold": 0.23,
+  "evaluation_date": "2026-10-09",
+  "evaluation_basis": "Saved runtime model evaluated with current in-memory feature pipeline on the chronological 2021-2024 test split",
+  "model_type": "TwoStageHeatwavePredictor",
+  "classifier": "sklearn.ensemble.HistGradientBoostingClassifier(class_weight='balanced')",
+  "departure_regressor": "sklearn.ensemble.HistGradientBoostingRegressor(loss='squared_error')",
+  "uncertainty_estimators": [
+    "sklearn.ensemble.HistGradientBoostingRegressor(loss='quantile', quantile=0.10)",
+    "sklearn.ensemble.HistGradientBoostingRegressor(loss='quantile', quantile=0.90)"
+  ],
+  "probability_calibration": "not applied",
+  "optimal_threshold": 0.35,
   "classification": {
-    "train": {
-      "pr_auc": 0.9119,
-      "roc_auc": 0.9995,
-      "f1_heatwave": 0.7412,
-      "f1_macro": 0.8691,
-      "precision": 0.5893,
-      "recall": 0.9986,
-      "recall_at_80_precision": 0.853,
-      "brier_score": 0.0025,
-      "threshold": 0.23,
-      "tp": 1393,
-      "fp": 971,
-      "fn": 2,
-      "tn": 163765,
-      "total_samples": 166131,
-      "positive_samples": 1395,
-      "positive_rate_pct": 0.84
-    },
-    "val": {
-      "pr_auc": 0.6168,
-      "roc_auc": 0.9947,
-      "f1_heatwave": 0.5872,
-      "f1_macro": 0.7908,
-      "precision": 0.4612,
-      "recall": 0.808,
-      "recall_at_80_precision": 0.232,
-      "brier_score": 0.0052,
-      "threshold": 0.23,
-      "tp": 101,
-      "fp": 118,
-      "fn": 24,
-      "tn": 12528,
-      "total_samples": 12771,
-      "positive_samples": 125,
-      "positive_rate_pct": 0.979
-    },
     "test": {
-      "pr_auc": 0.6747,
-      "roc_auc": 0.9671,
-      "f1_heatwave": 0.6643,
-      "f1_macro": 0.8261,
-      "precision": 0.6305,
-      "recall": 0.7019,
-      "recall_at_80_precision": 0.3132,
-      "brier_score": 0.0164,
-      "threshold": 0.23,
-      "tp": 186,
-      "fp": 109,
-      "fn": 79,
-      "tn": 7746,
+      "accuracy": 0.9618,
+      "balanced_accuracy": 0.9438,
+      "pr_auc": 0.7294,
+      "roc_auc": 0.9818,
+      "f1_heatwave": 0.6125,
+      "f1_macro": 0.7962,
+      "precision": 0.4579,
+      "recall": 0.9245,
+      "recall_at_80_precision": 0.4642,
+      "brier_score": 0.0263,
+      "threshold": 0.35,
+      "tp": 245,
+      "fp": 290,
+      "fn": 20,
+      "tn": 7565,
       "total_samples": 8120,
       "positive_samples": 265,
       "positive_rate_pct": 3.264
     }
   },
   "regression": {
-    "train": {
-      "rmse": 1.0186,
-      "mae": 0.7213,
-      "r2": 0.9317,
-      "heatwave_day_mae": 1.0874
-    },
-    "val": {
-      "rmse": 1.1236,
-      "mae": 0.7819,
-      "r2": 0.9227,
-      "heatwave_day_mae": 1.0409
-    },
     "test": {
-      "rmse": 1.5257,
-      "mae": 1.0807,
-      "r2": 0.869,
-      "heatwave_day_mae": 1.325
-    }
-  },
-  "severity_breakdown": {
-    "test_true_distribution": {
-      "Normal": 7855,
-      "Warning": 229,
-      "Severe": 34,
-      "Extreme": 2
-    },
-    "test_predicted_distribution": {
-      "Normal": 7825,
-      "Warning": 295,
-      "Severe": 0,
-      "Extreme": 0
+      "rmse": 1.4899,
+      "mae": 1.07,
+      "r2": 0.8751
     }
   }
 }

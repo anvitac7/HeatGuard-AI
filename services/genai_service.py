@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 log = logging.getLogger("genai_service")
+GEMINI_MODEL = "gemini-3.8-flash"
 
 # Check for google-genai SDK
 GENAI_AVAILABLE = False
@@ -198,6 +199,7 @@ DIRECTIVES:
 3. Tone must be authoritative, calm, and actionable."""
             llm_text = self._call_llm_text(prompt)
 
+        is_llm_generated = bool(llm_text)
         if not llm_text:
             llm_text, checklist = self._generate_deterministic_advisory(
                 city, target_date, cur_tmax, t3d, pred_tmax, departure, prob, risk, severity, audience, p10, p90
@@ -217,7 +219,7 @@ DIRECTIVES:
             "predicted_departure": departure,
             "advisory_markdown": llm_text,
             "priority_checklist": checklist,
-            "is_llm_generated": bool(self.api_key and llm_text),
+            "is_llm_generated": is_llm_generated,
             "guardrail_status": "Verified Grounded — Zero Hallucination Guarantee",
         }
 
@@ -600,7 +602,7 @@ GROUNDED FACTS:
                     contents.append(f"{turn.get('role', 'user')}: {turn.get('content', '')}")
                 contents.append(f"user: {message}")
                 response = self.client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model=GEMINI_MODEL,
                     contents=contents,
                 )
                 if response and response.text:
@@ -624,45 +626,42 @@ GROUNDED FACTS:
 
         try:
             import requests
-            models_to_try = [
-                "gemini-2.0-flash",
-                "gemini-1.5-flash",
-                "gemini-2.0-flash-lite",
-                "gemini-2.5-flash",
-                "gemini-flash-latest",
-            ]
-            for model_name in models_to_try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={key}"
-                contents = []
-                for turn in chat_history[-6:]:
-                    role = "user" if turn.get("role") == "user" else "model"
-                    contents.append({"role": role, "parts": [{"text": turn.get("content", "")}]})
-                contents.append({"role": "user", "parts": [{"text": message}]})
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+            contents = []
+            for turn in chat_history[-6:]:
+                role = "user" if turn.get("role") == "user" else "model"
+                contents.append({"role": role, "parts": [{"text": turn.get("content", "")}]})
+            contents.append({"role": "user", "parts": [{"text": message}]})
 
-                payload = {
-                    "systemInstruction": {
-                        "parts": [{"text": system_prompt}]
-                    },
-                    "contents": contents,
-                    "generationConfig": {
-                        "temperature": 0.5,
-                        "maxOutputTokens": 2048,
-                        "thinkingConfig": {
-                            "thinkingBudget": 0
-                        }
+            payload = {
+                "systemInstruction": {
+                    "parts": [{"text": system_prompt}]
+                },
+                "contents": contents,
+                "generationConfig": {
+                    "temperature": 0.5,
+                    "maxOutputTokens": 2048,
+                    "thinkingConfig": {
+                        "thinkingBudget": 0
                     }
                 }
-                resp = requests.post(url, json=payload, timeout=4)
-                if resp.status_code == 200:
-                    data = resp.json()
-                    candidates = data.get("candidates", [])
-                    if candidates:
-                        parts = candidates[0].get("content", {}).get("parts", [])
-                        if parts:
-                            return parts[0].get("text", "").strip()
-                elif resp.status_code in [400, 401, 403]:
-                    # Invalid key or auth issue; abort loop early
-                    break
+            }
+            resp = requests.post(url, params={"key": key}, json=payload, timeout=20)
+            if resp.status_code == 200:
+                data = resp.json()
+                candidates = data.get("candidates", [])
+                if candidates:
+                    parts = candidates[0].get("content", {}).get("parts", [])
+                    if parts:
+                        return parts[0].get("text", "").strip()
+            else:
+                error = resp.json().get("error", {})
+                log.warning(
+                    "Gemini REST request failed with HTTP %s (%s): %s",
+                    resp.status_code,
+                    error.get("status", "unknown"),
+                    error.get("message", "No provider message returned."),
+                )
         except Exception as e:
             log.warning("Direct Gemini REST call failed: %s", e)
         return None
@@ -673,7 +672,7 @@ GROUNDED FACTS:
             return None
         if self.client:
             try:
-                res = self.client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+                res = self.client.models.generate_content(model=GEMINI_MODEL, contents=prompt)
                 if res and res.text:
                     return res.text.strip()
             except Exception:

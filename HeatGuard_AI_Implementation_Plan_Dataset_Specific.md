@@ -1,556 +1,123 @@
-# HeatGuard AI — Dataset-Specific Implementation Plan & Modeling Architecture
-
-## 1. Project Title & Executive Overview
-
-**HeatGuard AI: GenAI-Powered Heatwave Prediction, Multi-Tier ML/Foundation Risk Modeling, and Grounded Stakeholder Advisory System**
-
-HeatGuard AI is an intelligent early-warning and meteorological risk communication platform built on the comprehensive 74-year daily meteorological dataset `heatguard_clean.csv` (1951–2024, 187,387 records across 7 major Indian cities).
-
-The system addresses the end-to-end operational pipeline:
-1. **Historical Meteorological Ingestion & Temporal Feature Engineering:** Processes 74 years of daily maximum/minimum temperatures, rainfall, and spatial indicators with calendar-aware continuity.
-2. **Next-Day Heatwave & Severity Prediction:** Employs a multi-tier modeling suite spanning scientific baselines (Persistence, Balanced Logistic Regression, Random Forest), tabular gradient boosting SOTA (LightGBM/CatBoost with Focal Loss), deep sequence models (Temporal Fusion Transformer, PatchTST), and Hugging Face time-series foundation models (Amazon Chronos, Google TimesFM, TabPFN).
-3. **Continuous Departure Regression & Calibrated Risk Estimation:** Uses a two-stage hybrid engine predicting continuous temperature departure ($\Delta T_{t+1} = T_{\max, t+1} - \text{Threshold}_{t+1}$) and calibrated posterior probabilities $P(\text{Heatwave}_{t+1})$.
-4. **Grounded Generative AI Advisory Engine:** Converts structured ML outputs into stakeholder-tailored advisories (Citizen, Farmer, Health Agency, Municipal Authority) with hallucination guardrails.
-5. **Interactive Full-Stack Web Platform:** Delivers a responsive dashboard with Leaflet.js geospatial risk maps, Chart.js climate analytics, an Advisory Studio, and a context-aware Heatwave AI Chatbot.
-
----
-
-## 2. Dataset Specification & 74-Year Historical Context
-
-### Dataset Overview
-- **File:** `heatguard_clean.csv`
-- **Total Rows:** 187,387 daily records
-- **Total Columns:** 14 features
-- **Temporal Span:** January 1, 1951 to June 21, 2024 (74 consecutive years)
-- **Geographic Coverage:** 7 Indian Metropolitan Hubs (Ahmedabad, Bengaluru, Chennai, Delhi, Kolkata, Mumbai, Pune)
-- **Duplicate Records:** **0 duplicates** across `(city, date)` combinations
-
-### Column Dictionary & Feature Types
-
-| Column | Data Type | Meteorological Description | Usage in System |
-|---|---|---|---|
-| `date` | Date (`YYYY-MM-DD`) | Daily observation date | Chronological ordering & temporal splitting |
-| `city` | String (Categorical) | Name of the metropolitan area (7 cities) | Spatial grouping & entity embeddings |
-| `latitude` | Float64 | City latitude coordinate | Geospatial mapping & spatial features |
-| `longitude` | Float64 | City longitude coordinate | Geospatial mapping & spatial features |
-| `temp_max` | Float64 (°C) | Daily maximum ambient temperature | Primary thermal driver |
-| `temp_min` | Float64 (°C) | Daily minimum ambient temperature | Nighttime heat retention indicator |
-| `rain` | Float64 (mm) | Daily accumulated rainfall | Soil moisture & cooling covariate |
-| `year` | Int64 | Calendar year (1951–2024) | Decadal trend & climate acceleration tracking |
-| `month` | Int64 | Calendar month (1–12) | Seasonal cycle indicator |
-| `day_of_year` | Int64 | Day index in the calendar year (1–366) | Cyclical annual feature engineering |
-| `season` | String (Categorical) | Winter, Summer, Monsoon, Post-Monsoon | Seasonal stratification |
-| `heatwave_threshold` | Float64 (°C) | IMD-derived climatological heatwave threshold | Target baseline & departure calculation |
-| `is_heatwave_day` | Boolean (0/1) | Ground-truth heatwave indicator | Shifted for next-day target ($t+1$) |
-| `severity` | String (Categorical) | Normal, Warning, Severe, Extreme | Ground-truth severity tier |
-
----
-
-## 3. Deep Dataset Profiling & Critical Empirical Discoveries
-
-### 3.1 Ground-Truth Label Mechanics & Departure Rules
-Profiling reveals that the ground-truth labels strictly follow an exact departure rule relative to `heatwave_threshold`:
-$$\Delta T = \text{temp\_max} - \text{heatwave\_threshold}$$
-
-- **Normal:** $\Delta T < 0^\circ\text{C}$ (185,596 records, 99.044%)
-- **Warning:** $0^\circ\text{C} \le \Delta T < 2.0^\circ\text{C}$ (1,663 records, 0.887%)
-- **Severe:** $2.0^\circ\text{C} \le \Delta T < 4.0^\circ\text{C}$ (126 records, 0.067%)
-- **Extreme:** $\Delta T \ge 4.0^\circ\text{C}$ (**2 records**, 0.001% — May 23 & 24, 2024 in Ahmedabad reaching 45.9°C and 46.6°C against threshold 41.83°C)
-
-### 3.2 City Climatology & Spatial Disparity
-
-| City | Total Rows | Date Range | Lat / Lon | Avg Max Temp | All-Time Peak | Heatwave Days | Heatwave % | Warning | Severe | Extreme |
-|---|---|---|---|---|---|---|---|---|---|---|
-| **Delhi** | 26,749 | 1951-01-01 – 2024-06-19 | 28.5°N, 77.5°E | 31.70°C | **47.46°C** | **722** | **2.70%** | 661 | 61 | 0 |
-| **Ahmedabad** | 26,748 | 1951-01-01 – 2024-06-21 | 23.5°N, 72.5°E | 32.88°C | **46.60°C** | **619** | **2.31%** | 575 | 42 | **2** |
-| **Chennai** | 26,826 | 1951-01-01 – 2024-06-21 | 13.5°N, 80.5°E | 33.68°C | 44.96°C | **388** | **1.45%** | 367 | 21 | 0 |
-| **Kolkata** | 26,745 | 1951-01-01 – 2024-06-19 | 22.5°N, 88.5°E | 31.22°C | 43.00°C | **37** | **0.14%** | 35 | 2 | 0 |
-| **Pune** | 26,746 | 1951-01-01 – 2024-06-19 | 18.5°N, 73.5°E | 31.14°C | 41.80°C | **23** | **0.09%** | 23 | 0 | 0 |
-| **Mumbai** | 26,746 | 1951-01-01 – 2024-06-19 | 19.5°N, 72.5°E | 32.08°C | 40.90°C | **2** | **0.01%** | 2 | 0 | 0 |
-| **Bengaluru** | 26,827 | 1951-01-01 – 2024-06-20 | 13.5°N, 77.5°E | 30.14°C | 38.93°C | **0** | **0.00%** | 0 | 0 | 0 |
-
-> **Key Spatial Insight:** Delhi, Ahmedabad, and Chennai account for **96.5%** of all heatwaves in the dataset. Bengaluru's static 40.0°C threshold was never breached in 74 years (highest was 38.93°C), and Mumbai recorded only 2 heatwave days.
-
-### 3.3 Rainfall Missingness Etiology
-- Total missing rainfall records: **51,594 (27.53%)**.
-- **Root Cause Identified:** **Chennai (95.62% null)** and **Mumbai (95.74% null)** had **no recorded rainfall from 1951 to 2020**; rainfall observations began strictly in January 2021.
-- In contrast, Ahmedabad, Bengaluru, Delhi, Kolkata, and Pune maintain **>99.7% complete rainfall data** over the full 74-year span.
-- **Engineering Rule:** Models must not use raw rainfall without zero-imputation and an explicit binary indicator `rain_is_recorded` (or use LightGBM's native missing value branch routing).
-
-### 3.4 Decadal Climate Surge (1951–2024)
-- **1950s–2010s:** Heatwaves averaged 150–250 days per decade.
-- **2020–2024 (Only 4.5 Years):** Recorded **284 heatwave days**, **34 severe heatwave days**, and **both extreme events (May 2024)**, already exceeding every full 10-year decade since 1951.
-- Average maximum temperature increased steadily from $31.50^\circ\text{C}$ (1950s) to $32.43^\circ\text{C}$ (2020s).
-
-### 3.5 Heatwave Persistence Dynamics
-- $P(\text{Heatwave}_{t+1} \mid \text{Heatwave}_t = 1) = \mathbf{63.11\%}$
-- $P(\text{Heatwave}_{t+1} \mid \text{Normal}_t = 0) = \mathbf{0.36\%}$
-- **Persistence Multiplier:** A heatwave today makes a heatwave tomorrow **176.9 times more likely**.
-
----
-
-## 4. Data Leakage Prevention & Target Formulation
-
-To guarantee real-world predictive validity and prevent data leakage:
-
-### Forbidden Predictive Features
-The following features of Day $t$ must **never** be used as raw input features to predict Day $t$:
-- `is_heatwave_day` (Day $t$) — trivially leaks ground truth
-- `severity` (Day $t$) — trivially leaks ground truth
-- `heatwave_threshold` (Day $t$) — used only as a reference baseline or for departure calculations
-
-### Operational Supervised Targets
-The model predicts the state of the **following day ($t+1$)** given information available up to Day $t$:
-
-1. **Target 1 (Primary Binary Classification):**
-   $$\text{target\_heatwave\_next\_day} = \text{is\_heatwave\_day}_{t+1} \in \{0, 1\}$$
-2. **Target 2 (Continuous Departure Regression):**
-   $$\text{target\_departure\_next\_day} = \text{temp\_max}_{t+1} - \text{heatwave\_threshold}_{t+1}$$
-3. **Target 3 (Secondary Severity Classification):**
-   $$\text{target\_severity\_next\_day} = \text{severity}_{t+1} \in \{\text{Normal}, \text{Warning}, \text{Severe}, \text{Extreme}\}$$
-
-*(The final observation for each city time-series has no $t+1$ target and is dropped from supervised training).*
-
----
-
-## 5. Feature Engineering Pipeline
-
-All features are computed on chronologically sorted data within each city partition (`city`, `date`).
-
-```mermaid
-flowchart TD
-    A["Raw Daily Weather (Day t)"] --> B["Continuous Calendar Reindexing & Gap Detection"]
-    
-    B --> C1["Autoregressive Lags<br/>temp_max_lag1, lag2, lag3, lag7<br/>temp_min_lag1, lag2, lag3, lag7<br/>rain_lag1, lag3, lag7"]
-    B --> C2["Rolling Window Dynamics<br/>temp_max_3d_avg, 7d_avg, 7d_max<br/>temp_min_3d_avg, 7d_avg<br/>rain_7d_sum, temp_range_3d_avg"]
-    B --> C3["Trigonometric Cyclical Encodings<br/>sin_doy, cos_doy = sin/cos(2π·day/365.25)<br/>sin_month, cos_month = sin/cos(2π·month/12)"]
-    B --> C4["Meteorological Interaction Terms<br/>diurnal_temp_range = temp_max - temp_min<br/>temp_departure_today = temp_max - threshold<br/>heatwave_streak_days (consecutive HW count)"]
-    B --> C5["Spatial & Missingness Covariates<br/>city_onehot / city_embedding<br/>latitude, longitude<br/>rain_is_recorded (binary flag)"]
-
-    C1 & C2 & C3 & C4 & C5 --> D["Engineered Feature Vector X_t (No Leakage)"]
-```
-
-### Feature Dictionary for Modeling
-
-```text
-Numerical Continuous Features:
-├── temp_max (Day t)
-├── temp_min (Day t)
-├── rain (Day t, 0.0 if missing)
-├── diurnal_temp_range = temp_max - temp_min
-├── temp_departure_today = temp_max - heatwave_threshold
-├── temp_max_lag1, temp_max_lag2, temp_max_lag3, temp_max_lag7
-├── temp_min_lag1, temp_min_lag2, temp_min_lag3, temp_min_lag7
-├── rain_lag1, rain_lag3, rain_lag7
-├── temp_max_3d_avg, temp_max_7d_avg, temp_max_7d_max
-├── temp_min_3d_avg, temp_min_7d_avg
-├── rain_7d_sum
-├── diurnal_range_3d_avg
-└── heatwave_streak_days (integer count of consecutive HW days up to t)
-
-Temporal & Cyclical Features:
-├── sin_doy = sin(2 * π * day_of_year / 365.25)
-├── cos_doy = cos(2 * π * day_of_year / 365.25)
-├── sin_month = sin(2 * π * month / 12.0)
-├── cos_month = cos(2 * π * month / 12.0)
-└── year_scaled = (year - 1951) / (2024 - 1951)
-
-Spatial & Missingness Categoricals:
-├── city (One-Hot Encoded or Categorical Target Encoded)
-├── latitude, longitude
-├── season (One-Hot Encoded: Summer, Monsoon, Post-Monsoon, Winter)
-└── rain_is_recorded (1 if rain was measured, 0 if null)
-```
-
----
-
-## 6. Preprocessing & Time-Series Gap Handling
-
-1. **Date Parsing & Sorting:** Parse `date` into ISO-8601 date objects, sort strictly by `['city', 'date']`.
-2. **Missing `temp_min` (33 rows):** Handled via linear time-series interpolation within each city partition.
-3. **Missing `rain` (51,594 rows):** Impute with `0.0` and attach `rain_is_recorded = 0` (preserves Chennai/Mumbai distribution while enabling zero-fill gradient boosting).
-4. **Calendar Continuity Gaps (40 isolated gaps):** Shift operations must verify that `(date_t - date_{t-1}).days == 1`. If a gap exists (such as the 84-day winter gap in 2023–2024), reset lag windows to prevent cross-gap contamination.
-
----
-
-## 7. Multi-Tier Machine Learning & Foundation Model Architecture
-
-HeatGuard AI implements a structured, benchmarked hierarchy of models across 4 tiers:
-
-```mermaid
-flowchart LR
-    subgraph Tier1 ["Tier 1: Baselines"]
-        T1A["Climatological Persistence"]
-        T1B["Balanced Logistic Regression"]
-        T1C["Balanced Random Forest"]
-    end
-
-    subgraph Tier2 ["Tier 2: Tabular SOTA"]
-        T2A["LightGBM (Focal Loss / scale_pos_weight)"]
-        T2B["CatBoost (Ordered Target Statistics)"]
-        T2C["Explainable Boosting Machines (EBM)"]
-    end
-
-    subgraph Tier3 ["Tier 3: Deep Sequence Models"]
-        T3A["Temporal Fusion Transformer (TFT)"]
-        T3B["PatchTST (Sub-series Patching)"]
-    end
-
-    subgraph Tier4 ["Tier 4: Foundation Models"]
-        T4A["Amazon Chronos (chronos-t5 / bolt)"]
-        T4B["Google TimesFM (timesfm-1.0-200m)"]
-        T4C["TabPFN (In-Context Bayesian)"]
-    end
-
-    Tier1 --> Tier2 --> Tier3 --> Tier4
-```
-
-### Tier 1: Scientific & Classical Baselines
-1. **Climatological Persistence Baseline:** Heuristic rule assigning $\widehat{y}_{t+1} = 1$ if $y_t = 1$ or $\text{temp\_max}_t \ge \text{threshold}_t$. Demonstrates value added over naive persistence.
-2. **Balanced Logistic Regression:** L2 regularized logistic regression with `class_weight='balanced'`, providing convex baseline log-odds weights.
-3. **Balanced Random Forest:** 300 bagged trees with `class_weight='balanced_subsample'`, capturing non-linear feature splits (the standard IMD literature benchmark).
-
-### Tier 2: Tabular State-of-the-Art (Production Engine)
-1. **LightGBM with Focal Loss / Asymmetric Cost Weighting:**
-   - Primary workhorse for tabular time-series.
-   - `scale_pos_weight = 20.0` or Focal Loss ($\alpha=0.25, \gamma=2.0$).
-   - Handles missing rainfall values natively via optimal split finding.
-   - Extremely fast training ($<2$ seconds on 187k rows).
-2. **CatBoost:**
-   - Employs Ordered Target Statistics on `city` and `season` to prevent categorical target leakage.
-3. **Explainable Boosting Machines (EBM / InterpretML):**
-   - Generalized additive models with tree-based pairwise interactions ($g(E[y]) = \beta_0 + \sum f_i(x_i) + \sum f_{ij}(x_i, x_j)$).
-   - Delivers glass-box spline curves for regulatory and government health auditing.
-
-### Tier 3: Deep Learning & Sequence Models
-1. **Temporal Fusion Transformer (TFT / Lim et al., 2021):**
-   - Incorporates static city metadata (`lat`, `lon`, city embeddings), observed 14-day historical trajectories ($T_{\max}, T_{\min}, \text{Rain}$), and known future calendar covariates (DOY, Month, IMD threshold).
-   - Built-in Variable Selection Networks (VSN) and temporal self-attention weights produce interpretable attention maps over the heatwave incubation period.
-2. **PatchTST (Nie et al., ICLR 2023):**
-   - Segments 14-day temperature histories into overlapping 3-day patches to capture thermal wave accumulation.
-
-### Tier 4: Hugging Face & Time-Series Foundation Models
-1. **Amazon Chronos (`amazon/chronos-t5-base`, `amazon/chronos-bolt-base`):**
-   - Tokenizes continuous meteorological time series and autoregressively generates the full posterior probability distribution over future temperatures ($p_{10}, p_{50}, p_{90}$).
-   - Direct analytic calculation of heatwave probability:
-     $$P(\text{Heatwave}_{t+1}) = P(T_{\max, t+1} \ge \text{Threshold}_{t+1})$$
-2. **Google TimesFM (`google/timesfm-1.0-200m`):**
-   - 200M parameter decoder-only foundation model trained on $>100\text{B}$ time points.
-   - Zero-shot and fine-tuned 1-day to 7-day multi-horizon temperature forecasts.
-3. **TabPFN (`tabpfn`):**
-   - Prior-Data Fitted Network performing in-context Bayesian inference in a single forward pass without SGD iterations.
-
----
-
-## 8. Two-Stage Production Hybrid Engine
-
-To overcome the extreme class imbalance and leverage all 187k continuous records, the production system deploys a **Two-Stage Hybrid Architecture**:
-
-```mermaid
-flowchart TD
-    A["Feature Vector X_t (Day t)"] --> B1["Stage 1: Continuous Regressor<br/>(LightGBM Regressor / Chronos)"]
-    A --> B2["Stage 2: Rare-Event Classifier<br/>(LightGBM Classifier + CalibratedClassifierCV)"]
-    
-    B1 --> C1["Predicted T_max(t+1)<br/>& Predicted Departure ΔT(t+1)"]
-    B2 --> C2["Calibrated Probability P(Heatwave t+1)"]
-    
-    C1 & C2 --> D["Ensemble Decision & Severity Tier Mapper"]
-    
-    D --> E1["Risk Level: LOW / MODERATE / HIGH / EXTREME"]
-    D --> E2["Predicted Severity: Normal / Warning / Severe / Extreme"]
-    D --> E3["Model Uncertainty: [p10, p50, p90] °C"]
-    
-    E1 & E2 & E3 --> F["Grounded GenAI Advisory & Chatbot Layer"]
-```
-
-### Stage 1: Continuous Temperature Dynamics Regressor
-- Trains on all 187,387 continuous temperature records to predict $\widehat{T}_{\max, t+1}$.
-- Computes expected departure $\Delta \widehat{T}_{t+1} = \widehat{T}_{\max, t+1} - \text{Threshold}_{t+1}$.
-
-### Stage 2: Calibrated Rare-Event Classifier
-- Trains with `scale_pos_weight` and passes raw logits through Isotonic / Sigmoid calibration (`CalibratedClassifierCV`) to output well-calibrated posterior risk $P(\text{Heatwave}_{t+1})$.
-
-### Stage 3: Severity Tier Mapping
-- If $P(\text{Heatwave}_{t+1}) \ge \tau$ (optimal F1 threshold $\sim 0.35$):
-  - **Warning:** $0.0^\circ\text{C} \le \Delta \widehat{T}_{t+1} < 2.0^\circ\text{C}$
-  - **Severe:** $2.0^\circ\text{C} \le \Delta \widehat{T}_{t+1} < 4.0^\circ\text{C}$
-  - **Extreme:** $\Delta \widehat{T}_{t+1} \ge 4.0^\circ\text{C}$
-
----
-
-## 9. Train / Validation / Test Splitting Protocol
-
-Because meteorological data has strong autocorrelation and climate drift, **random shuffling is strictly prohibited**. We enforce a **Chronological Time-Series Split**:
-
-```text
-┌──────────────────────────────────────┬──────────────────┬──────────────────┐
-│      Training Set (1951–2015)        │ Validation Set   │   Test Set       │
-│             65 Years                 │   (2016–2020)    │  (2021–2024)     │
-│         ~164,000 Records             │ ~12,700 Records  │ ~10,600 Records  │
-│      Baseline Climate History        │ Hyperparam Tuning│ Recent Surge Test│
-└──────────────────────────────────────┴──────────────────┴──────────────────┘
-```
-
-- **Training Set (1951–2015):** Establishes baseline climatology and historical heat patterns across decades.
-- **Validation Set (2016–2020):** Used for threshold tuning, learning rate scheduling, and early stopping.
-- **Test Set (2021–2024):** Contains the recent climate acceleration period, testing the model's generalization on the highest heatwave frequency in Indian history (including both May 2024 extreme events).
-
-### Evaluation Metrics (Class-Imbalance Aware)
-Because standard accuracy is misleading (a trivial model predicting all 0s achieves 99.04% accuracy):
-1. **PR-AUC (Precision-Recall Area Under Curve):** Primary optimization metric for positive rare events.
-2. **F1-Score (Macro & Heatwave-specific):** Balance between false alarms and missed heatwaves.
-3. **Recall @ 80% Precision:** Operational safety metric for emergency services.
-4. **Brier Score & Calibration Curve:** Evaluates probability reliability for GenAI risk communication.
-5. **ROC-AUC:** Overall discriminatory capacity across all thresholds.
-
----
-
-## 10. Comprehensive Model Comparison Matrix
-
-| Model | Model Family | Best Source / Library | Training Time | Imbalance Handling | Interpretability | Primary System Role |
-|---|---|---|---|---|---|---|
-| **Persistence Rule** | Heuristic | Native Python | Instant | Fixed Rule | Exact Logic | **Baseline 1 (Physical Benchmark)** |
-| **Logistic Regression** | Linear Generalized | `scikit-learn` | $<1$ sec | `class_weight='balanced'` | High (Odds Ratios) | **Baseline 2 (Linear Benchmark)** |
-| **Random Forest** | Bagged Ensemble | `scikit-learn` | $\sim 5$ sec | `balanced_subsample` | High (Gini Imp.) | **Baseline 3 (Tree Benchmark)** |
-| **LightGBM** | Gradient Boosting | `lightgbm` | $\sim 2$ sec | **Focal Loss / Scale-Pos** | High (TreeSHAP) | **Primary Production Model (SOTA)** |
-| **CatBoost** | Gradient Boosting | `catboost` | $\sim 8$ sec | Built-in target stats | High (Feature Imp.) | **Tabular SOTA Competitor** |
-| **Explainable Boosting (EBM)** | GAM with Trees | `interpret` (Microsoft) | $\sim 15$ sec | Class weighting | **Exceptional (Splines)** | **Audit & Governance Engine** |
-| **Temporal Fusion Transf. (TFT)** | Deep Transformer | `pytorch-forecasting` | $\sim 3$ min | Weighted Cross-Entropy | High (Temporal Attention)| **Deep Multi-Horizon Model** |
-| **Amazon Chronos** | Foundation TS LLM | Hugging Face (`amazon/chronos`) | Zero-Shot / Fine-tune | Full Quantile Output | Moderate (Probabilistic) | **Frontier Probabilistic Forecaster**|
-| **Google TimesFM** | Foundation TS Model| Hugging Face (`google/timesfm`) | Zero-Shot / Fine-tune | Continuous Covariates | Moderate | **Multi-Day Horizon Explorer** |
-
----
-
-## 11. Research Literature & Academic Citations
-
-1. **IMD Heatwave Operational Frameworks:**
-   - *Pai, D. S., et al.* (2023): *"Analysis of heat waves over India and operational early warning systems."* *MAUSAM / IMD Technical Reports*.
-   - *Rao, V. X., et al.* (2022): *"Machine learning approaches for regional heatwave prediction using IMD gridded datasets."* *Journal of Earth System Science*.
-2. **Temporal Transformers & Foundation Models:**
-   - *Lim, B., et al.* (2021): *"Temporal Fusion Transformers for interpretable multi-horizon time series forecasting."* *International Journal of Forecasting*, 37(4), 1748–1764.
-   - *Ansari, A. F., et al. (Amazon Science, 2024)*: *"Chronos: Learning the Language of Time Series."* arXiv:2403.07815.
-   - *Das, A., et al. (Google Research, ICML 2024)*: *"A decoder-only foundation model for time-series forecasting (TimesFM)."*
-   - *Nie, Y., et al. (ICLR 2023)*: *"A Time Series is Worth 64 Words: Long-term Forecasting with Transformers (PatchTST)."*
-3. **Tabular Deep Learning & In-Context Inference:**
-   - *Hollmann, N., et al. (Nature 2025 / ICLR)*: *"TabPFN: A Transformer That Solves Small Tabular Classification Problems in a Second."*
-
----
-
-## 12. Grounded Generative AI Advisory & Assistant Engine
-
-The Generative AI layer translates structured ML predictions into clear, actionable advisories without hallucinating weather data.
-
-```mermaid
-flowchart TD
-    A["ML Engine Output<br/>{city, date, temp_max, 3d_avg, prob, risk, severity}"] --> B["Structured Prompt Constructor<br/>(Grounding Constraints & Persona Directives)"]
-    
-    B --> C["GenAI LLM Interface<br/>(Gemini / OpenAI / Anthropic / Hugging Face)"]
-    
-    C --> D1["Advisory Persona: Citizen<br/>(Hydration, outdoor timing, vulnerable groups)"]
-    C --> D2["Advisory Persona: Farmer<br/>(Irrigation timing, livestock shade, crop protection)"]
-    C --> D3["Advisory Persona: Health Agency<br/>(Hospital bed surge, ORS supply, heat stroke triage)"]
-    C --> D4["Advisory Persona: Municipality<br/>(Cool roofs, misting stations, power grid buffer)"]
-    
-    C --> E["Interactive Heatwave AI Chatbot<br/>(Grounded Q&A on City History & Risk)"]
-```
-
-### Controlled Advisory Prompt Template
-
-```text
-System:
-You are HeatGuard AI, an operational meteorological risk communicator and heatwave advisory system.
-Generate a concise, high-impact advisory based EXCLUSIVELY on the verified machine learning prediction provided below.
-
-Prediction Context:
-- Target City: {city} (Latitude: {latitude}, Longitude: {longitude})
-- Observation Date: {date}
-- Current Max Temperature: {temp_max}°C (3-Day Moving Average: {temp_max_3d_avg}°C)
-- Next-Day Heatwave Probability: {probability}%
-- Assessed Risk Level: {risk_level} (LOW / MODERATE / HIGH / EXTREME)
-- Predicted Severity Tier: {severity} (Normal / Warning / Severe / Extreme)
-- Target Audience: {audience} (Citizen / Farmer / Health Agency / Local Authority)
-
-Directives:
-1. Ground every sentence in the provided numerical metrics; do not invent or adjust temperatures.
-2. Explain the risk level in plain, stakeholder-appropriate language.
-3. Provide exactly 3 to 4 actionable, prioritized precautions for the selected audience.
-4. Do not provide medical diagnosis, declare official states of emergency, or claim certainty if probability is moderate.
-```
-
----
-
-## 13. System Architecture & Backend API Specification
-
-The HeatGuard AI backend is built using Flask, organizing services into modular layers.
-
-```text
-HeatGuard-AI/
-├── app.py                          # Flask entrypoint & route controllers
-├── requirements.txt                # Production dependencies
-├── README.md                       # Comprehensive project guide & viva cheat sheet
-├── progress.md                     # Team progress tracker & work log
-├── HeatGuard_AI_Implementation_Plan_Dataset_Specific.md # Architectural plan
-│
-├── data/
-│   ├── heatguard_raw.csv           # Ingested 74-year daily dataset
-│   ├── heatguard_clean.csv         # Cleaned dataset (187,387 rows, 0 nulls, 40 segments)
-│   ├── model_ready_dataset.csv     # Feature matrix (187,022 rows x 45 features)
-│   ├── feature_schema.json         # Feature definitions & meta schema
-│   ├── cleaning_report.json        # Data cleaning validation report
-│   ├── baseline_metrics.json       # Scientific baselines evaluation metrics
-│   ├── baseline_report.md          # Baseline performance report
-│   ├── hybrid_metrics.json         # Two-stage hybrid evaluation metrics
-│   └── hybrid_report.md            # Two-stage hybrid performance report
-│
-├── data_cleaning/
-│   ├── Data_cleaner.py             # Calendar reindexing & missingness pipeline
-│   └── feature_eng.py              # Zero-leakage 45-feature engineering pipeline
-│
-├── models/
-│   ├── evaluate.py                 # Evaluation metrics & threshold tuning
-│   ├── train_baselines.py          # Persistence, LogReg & LightGBM Forest
-│   ├── hybrid_engine.py            # TwoStageHeatwavePredictor production pipeline
-│   ├── train_hybrid.py             # Two-stage hybrid training & isotonic calibration
-│   └── saved/
-│       ├── hybrid_predictor.pkl    # Serialized production pipeline
-│       ├── departure_regressor.pkl # Stage 1 continuous Huber regressor
-│       ├── lgbm_classifier.pkl     # Stage 2 calibrated classifier
-│       ├── persistence_baseline.pkl# Baseline 1
-│       ├── logreg_baseline.pkl     # Baseline 2
-│       ├── rf_baseline.pkl         # Baseline 3
-│       ├── scaler.pkl              # Feature standardizer
-│       └── model_metadata.json     # Feature list & training parameters
-│
-├── notebooks/
-│   ├── 03_baseline_models.ipynb    # Interactive baseline modeling notebook
-│   └── 04_two_stage_hybrid_engine.ipynb # Interactive two-stage hybrid notebook
-│
-├── services/
-│   ├── prediction_service.py       # Live lag feature builder & model inference
-│   ├── analytics_service.py        # 74-year climate trends & decadal analytics
-│   └── genai_service.py            # Persona advisory & chat grounding
-│
-├── templates/
-│   ├── index.html                  # Landing page
-│   ├── dashboard.html              # Live dashboard & KPI cards
-│   ├── advisory.html               # Multi-persona advisory studio
-│   ├── chatbot.html                # Interactive heatwave assistant
-│   └── analytics.html              # 74-year historical analytics explorer
-│
-└── static/
-    ├── css/
-    │   └── style.css               # Glassmorphism design system
-    └── js/
-        ├── dashboard.js            # Leaflet.js map & dynamic UI
-        ├── charts.js               # Chart.js historical trend graphs
-        └── chat.js                 # Chatbot state & streaming UI
-```
-
-### REST API Endpoints
-
-| Endpoint | Method | Input Payload | Output Response | Description |
-|---|---|---|---|---|
-| `/api/cities` | `GET` | None | `{"cities": [...]}` | City list, coordinates, thresholds, historical climatology |
-| `/api/history/<city>` | `GET` | Query `?years=10` | `{"dates": [...], "temps": [...]}` | Historical daily series, decadal heat counts, monthly distribution |
-| `/api/predict` | `POST` | `{"city": "Pune", "date": "2024-06-18"}` | `{"risk": "HIGH", "prob": 0.81, "temp_pred": 41.2, "severity": "Warning"}` | Dynamic lag feature extraction & two-stage ML prediction |
-| `/api/advisory` | `POST` | `{"city": "Pune", "audience": "Farmer"}` | `{"advisory_text": "...", "risk": "HIGH"}` | ML inference + grounded GenAI persona advisory |
-| `/api/chat` | `POST` | `{"city": "Delhi", "message": "Why is risk high?"}` | `{"reply": "...", "sources": [...]}` | Context-retrieved grounded chatbot response |
-| `/api/analytics/decades` | `GET` | None | `{"decades": [1950, 1960, ...], "heatwaves": [...]}` | 74-year decadal surge comparison data |
-
----
-
-## 14. Modern Interactive Web Application (Frontend UX)
-
-The frontend is crafted using a **modern glassmorphism dark-mode UI** powered by Vanilla CSS, Leaflet.js, and Chart.js:
-
-1. **Live Heatwave Command Center (Dashboard):**
-   - City selector & Date navigator.
-   - Dynamic KPI metric cards:
-     - **Current Temperature** vs **IMD Threshold Departure**.
-     - **3-Day Moving Average** & **7-Day Trend Direction**.
-     - **Predicted Next-Day Heatwave Risk** (Low / Moderate / High / Extreme) with animated circular confidence gauge.
-     - **Predicted Severity Tier Badge** (Normal / Warning / Severe / Extreme).
-2. **Interactive Multi-City Geospatial Map (Leaflet.js):**
-   - Displays all 7 cities with pulsating severity markers (Green, Yellow, Orange, Red).
-   - Clickable popups showing live predictions and weather metrics.
-3. **74-Year Climate Analytics Explorer (Chart.js):**
-   - Decadal heatwave surge bar chart (highlighting the 2020–2024 climate acceleration).
-   - City-by-city heatwave comparison.
-   - Monthly seasonality heatmap.
-4. **Multi-Stakeholder Advisory Studio:**
-   - Persona tabs: **Citizen**, **Farmer**, **Health Agency**, **Municipal Authority**.
-   - Generates and copies grounded advisories with priority action checklist badges.
-5. **Context-Grounded AI Assistant:**
-   - Floating and full-page chat interface with suggested quick-prompt chips (*"Why is Pune risk high tomorrow?"*, *"What should outdoor workers do?"*, *"Show Delhi's hottest year"*).
-
----
-
-## 15. Implementation Sequence & Deliverables
-
-```mermaid
-gantt
-    title HeatGuard AI Development Sequence
-    dateFormat  YYYY-MM-DD
-    section Phase 1 & 2
-    Data Preprocessing & Calendar Pipeline :done, p1, 2026-10-04, 1d
-    Zero-Leakage Feature Engineering        :done, p2, after p1, 1d
-    section Phase 3 & 4
-    Baseline Models (Persistence, LogReg, RF) :done, p3, after p2, 1d
-    Two-Stage Hybrid Engine (LightGBM)       :done, p4, after p3, 1d
-    section Phase 5 & 6
-    Flask REST Backend Services              :active, p5, after p4, 1d
-    Glassmorphism Dashboard & Leaflet Map   :p6, after p5, 1d
-    section Phase 7 & 8
-    GenAI Grounding & Chatbot Module        :p7, after p6, 1d
-    Full System Verification & Demo Run     :p8, after p7, 1d
-```
-
-### Key Deliverables & Verified Artifacts:
-1. `data_cleaning/Data_cleaner.py` & `data/heatguard_clean.csv` — Cleaned 74-year dataset (187,387 rows, 0 nulls, 40 segmented calendar gaps).
-2. `data_cleaning/feature_eng.py` & `data/model_ready_dataset.csv` — Feature-engineered matrix (187,022 rows x 45 features, 12 leakage tests passed).
-3. `models/evaluate.py` — Evaluation engine with PR-AUC, ROC-AUC, F1, Accuracy (97.68%), Balanced Accuracy (84.40%), and Brier score.
-4. `models/train_baselines.py` & `notebooks/03_baseline_models.ipynb` — Classical benchmarks (Persistence, Balanced LogReg, LightGBM Forest).
-5. `models/hybrid_engine.py` & `models/train_hybrid.py` — Production Two-Stage Hybrid Engine (Huber Regressor + Isotonic Calibrated Classifier).
-6. `models/saved/hybrid_predictor.pkl` & `models/saved/model_metadata.json` — Serialized production model ready for Flask backend inference.
-7. `data/hybrid_report.md` & `data/baseline_report.md` — Formal benchmarking metrics and evaluation reports.
-
----
-
-## 16. Comprehensive Demonstration Walkthrough
-
-**Demonstration City:** **Pune** (or **Delhi** / **Ahmedabad**)
-
-```text
-Step 1: User navigates to the Dashboard and selects "Pune" on "2024-06-18".
-  ↓
-Step 2: Backend retrieves Pune's historical meteorological sequence up to June 18.
-  ↓
-Step 3: Feature pipeline calculates recent 3-day average (38.9°C) and lag variables with zero leakage.
-  ↓
-Step 4: Two-stage LightGBM engine predicts:
-        - Continuous Departure: +1.2°C over threshold
-        - Heatwave Probability: 81.4%
-        - Severity Tier: Warning / High Risk
-  ↓
-Step 5: Dashboard updates KPI cards, Leaflet map marker turns amber/orange, and gauge animates to 81%.
-  ↓
-Step 6: User clicks the "Advisory Studio" tab and selects the "Farmer" persona.
-  ↓
-Step 7: Grounded GenAI Engine formats the prediction context into the verified prompt and generates:
-        - Explanation of high thermal stress.
-        - Specific agricultural precautions (early morning irrigation, livestock shading, crop hydration).
-  ↓
-Step 8: User opens the Chatbot and asks: "Why is the risk elevated tomorrow?"
-  ↓
-Step 9: Chatbot retrieves Pune's 3-day temperature trajectory and threshold departure, providing an exact, grounded explanation.
-```
-
----
-
-## 17. Summary of Project Outcomes
-
-By executing this enhanced implementation plan, HeatGuard AI achieves:
-- **Scientific Rigor:** Prevents data leakage, handles historical rainfall missingness with verified etiology, and enforces chronological validation.
-- **State-of-the-Art Modeling:** Benchmarks classical baselines against LightGBM (with Focal Loss) and modern time-series foundation models (Chronos, TimesFM, TabPFN).
-- **Factual GenAI Reliability:** Combines high-precision ML inference with grounded prompt engineering to eliminate hallucinations in public safety communication.
-- **Exceptional UX:** Delivers an intuitive, visually stunning web application for public health and meteorological risk management.
+# HeatGuard AI — Implemented System Overview
+
+This document describes the project that exists in the repository, not proposed model tiers or unimplemented future work. HeatGuard AI is a historical-data prototype built as a local Flask application. It forecasts one day ahead from weather history available in the checked-in dataset and displays audience-oriented advisory content.
+
+## 1. Project purpose and boundaries
+
+The project brings together:
+
+1. Daily weather-data cleaning and calendar-gap handling.
+2. City-specific temporal feature engineering and next-day labels.
+3. A saved scikit-learn model for temperature departure, uncertainty bounds, and heatwave risk scoring.
+4. A Flask application with prediction, map, trajectory, and historical-analytics pages.
+5. Four persona advisory formats and a context-aware chat interface, with optional Gemini requests and deterministic fallback behavior.
+
+This is not a live weather ingest system, official warning service, medical decision tool, or real emergency dispatch integration. The dataset ends on 2024-06-21. The exact OpenCity dataset catalog record and license were not retained in the project files.
+
+## 2. Dataset and cleaning
+
+The cleaned data has 187,387 daily records dated 1951-01-01 through 2024-06-21 for Ahmedabad, Bengaluru, Chennai, Delhi, Kolkata, Mumbai, and Pune. It contains daily maximum/minimum temperature, rainfall, city/date and calendar information, heatwave threshold, heatwave indicator, and severity label.
+
+The cleaning implementation in `data_cleaning/Data_cleaner.py` parses and orders city/date rows, handles missing temperature and rainfall values, records rainfall observability, identifies date gaps, creates segment boundaries, and writes validation results. The checked-in report records 40 calendar gaps and interpolation for 34 missing minimum-temperature values. Missing rainfall is represented with a `rain_is_recorded` field so filled values are distinguishable from observations.
+
+## 3. Feature and target construction
+
+`data_cleaning/feature_eng.py` creates 45 model inputs. They include:
+
+- current maximum/minimum temperature, rain, and diurnal range;
+- temperature and rain lags, plus rolling temperature/rain statistics;
+- heatwave persistence up to the observation date;
+- cyclical day-of-year and month features, scaled year, city and season indicators;
+- rainfall-observation status; and
+- the known next-day climatological threshold and its gap from current temperature.
+
+Windows are grouped by city and contiguous segment. The pipeline requires full recent history and a valid next calendar day. Targets are next-day heatwave status, temperature departure, severity, and maximum temperature. The report records 187,022 eligible rows from the 187,387 cleaned observations. Split assignment is chronological by target date: train through 2015, validation 2016–2020, and test 2021–2024.
+
+## 4. Prediction implementation
+
+The checked-in runtime artifact is `models/saved/hybrid_predictor.pkl`, an instance of `TwoStageHeatwavePredictor` in `models/hybrid_engine.py`. It contains:
+
+- one `HistGradientBoostingRegressor` using squared-error loss for temperature departure;
+- two `HistGradientBoostingRegressor` quantile heads for the 10th and 90th percentile departure estimates; and
+- one `HistGradientBoostingClassifier` with `class_weight="balanced"` for event probabilities.
+
+The artifact's stored decision threshold is 0.35. `predict_full` combines the binary model score with the departure estimate and quantile bounds to return risk and severity labels. The current `fit()` implementation uses the base classifier directly; it does not fit an isotonic or sigmoid calibration wrapper. Therefore, documentation and UI should call its probability output an estimated score/probability, not a calibrated probability.
+
+The following figures were recomputed by loading the saved artifact, regenerating the current feature matrix in memory from `data/heatguard_clean.csv`, applying the chronological 2021–2024 test split, and measuring the saved artifact at its stored threshold:
+
+| Test measure | Result |
+|---|---:|
+| Rows / heatwave positives | 8,120 / 265 (3.264%) |
+| Threshold | 0.35 |
+| Accuracy / balanced accuracy | 96.18% / 94.38% |
+| PR-AUC / ROC-AUC | 0.7294 / 0.9818 |
+| Precision / recall | 45.79% / 92.45% |
+| Brier score | 0.0263 |
+| Departure MAE / RMSE / R² | 1.070 °C / 1.490 °C / 0.8751 |
+| Confusion matrix (TN, FP, FN, TP) | 7,565; 290; 20; 245 |
+
+The test-set values describe this saved artifact and the current feature pipeline. They are not evidence of performance on live weather data.
+
+## 5. Flask services and pages
+
+`app.py` serves Jinja pages and JSON endpoints. `services/prediction_service.py` loads the historical records/model, constructs inference features for a city and date, and returns predictions. `services/analytics_service.py` computes historical summaries. `services/genai_service.py` formats persona advisories and chat responses.
+
+Implemented pages:
+
+- **Home:** project introduction and navigation.
+- **Dashboard:** historical city/date selection, next-day model result, temperature context, map, trajectory chart, all-city synchronization, and simulated scenario/dispatch controls.
+- **Analytics:** city comparisons, historical totals, decadal/monthly summaries, records, and persistence.
+- **Advisory Studio:** four audience selections, generated advisory and checklist, copy action, and PDF export.
+- **Chatbot:** conversational questions with city/date context, external Gemini attempt when configured, and a deterministic fallback.
+
+Dashboard controls include a date-advance action that changes the selected historical date by one day, all-seven-city inference for the selected date, and a combined PDF export that requests Citizen, Farmer, Health Agency, and Municipal Authority advisories for the selected city/date. The individual Advisory Studio can export the selected persona's advisory to a PDF.
+
+## 6. Endpoint inventory
+
+| Endpoint | Implemented purpose |
+|---|---|
+| `/api/cities`, `/api/presets` | City metadata and demo presets. |
+| `/api/predict`, `/api/predict-all` | One-city or all-seven-city historical-data model inference. |
+| `/api/history/<city>`, `/api/heatmap-data` | Observed trajectory plus next-day output and map payload. |
+| `/api/analytics/summary`, `/api/analytics/decades`, `/api/analytics/city-comparison`, `/api/analytics/monthly`, `/api/analytics/records`, `/api/analytics/persistence` | Historical climate summaries. |
+| `/api/advisory`, `/api/chat` | Persona advisory/checklist and conversational response. |
+| `/api/simulate` | Model response after changing selected input features. It is a prototype scenario comparison. |
+| `/api/forecast/<city>` | Multi-step forecast endpoint using the service's iterative procedure. |
+| `/api/alerts/dispatch` | Returns a simulated dispatch receipt; no message is sent to external recipients. |
+| `/api/health`, `/api/export/<city>` | Local service status and historical city CSV export. |
+
+## 7. GenAI behavior
+
+Advisories use model-provided city/date, risk, severity, temperature, departure, and uncertainty context and select a prompt/checklist appropriate to one of four personas: Citizen, Farmer, Health Agency, and Municipal Authority. The chat service can use structured prediction context and historical summaries. If `GEMINI_API_KEY` or `GOOGLE_API_KEY` is configured, the service attempts a Google Gemini request. When a request cannot complete, deterministic response logic is used.
+
+The integration suite verified that the advisory and chat endpoints return responses through the fallback path. The initial 9 October 2026 run encountered provider errors/timeouts. After the app model was updated to `gemini-3.8-flash`, a later live request through `/api/advisory` successfully generated an LLM-backed response. Provider availability and quota can still interrupt future calls, and the fallback remains in place. Grounding controls reduce but do not eliminate the possibility of inaccurate text. Human review is required before advice is used outside a demonstration.
+
+## 8. Verification and known limits
+
+`test_suite.py` was run on 9 October 2026. Its page and API assertions passed for page rendering, city and preset data, city and all-city predictions, history, map data, four persona advisories, chat, six analytics endpoints, a scenario, multi-step forecast response, simulated dispatch, and local health status.
+
+Known limits:
+
+- The stored observations stop at 2024-06-21; model outputs should be treated as historical-data demonstrations.
+- OpenCity source-page, license, and retrieval metadata need a dataset-level citation.
+- Gemini generation was verified through `/api/advisory` on 9 October 2026 with the updated model. Provider availability and quota can still cause fallback responses.
+- The multi-step forecast and feature perturbation outputs have not been validated as meteorological forecast products or climate projections.
+- The alert endpoint returns a demo receipt only.
+- The model's output probabilities are not calibrated by the current fitting code.
+
+## 9. Main implementation files
+
+| File | Responsibility |
+|---|---|
+| `data_cleaning/Data_cleaner.py` | Cleaning and calendar segmentation. |
+| `data_cleaning/feature_eng.py` | Feature construction, targets, splits, validation. |
+| `models/hybrid_engine.py` | Current estimator and inference mapping. |
+| `models/train_hybrid.py`, `models/train_baselines.py`, `models/evaluate.py` | Training and evaluation code. |
+| `models/saved/hybrid_predictor.pkl` | Fitted runtime predictor artifact. |
+| `models/saved/model_metadata.json` | Current model features, threshold, and estimator description. |
+| `services/prediction_service.py` | Historical feature extraction and predictions. |
+| `services/analytics_service.py` | Historical analytics. |
+| `services/genai_service.py` | Advisory, chat, external Gemini attempt, deterministic fallback. |
+| `app.py` | Flask page and API handlers. |
+| `templates/`, `static/` | User interface and browser behavior. |
+| `test_suite.py` | Flask integration checks. |
