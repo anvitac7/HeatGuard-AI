@@ -20,18 +20,38 @@ document.addEventListener("DOMContentLoaded", () => {
   if (paramCity && citySelect) citySelect.value = paramCity;
   if (paramDate && dateSelect) dateSelect.value = paramDate;
 
+  updateActivePreset();
   bindEvents();
   fetchAdvisory();
 });
+
+function updateActivePreset() {
+  const city = document.getElementById("adv-city-select")?.value;
+  const date = document.getElementById("adv-date-select")?.value;
+
+  document.querySelectorAll(".preset-chip").forEach((chip) => {
+    const isSelected = chip.dataset.city === city && chip.dataset.date === date;
+    chip.classList.toggle("active", isSelected);
+    chip.setAttribute("aria-pressed", String(isSelected));
+  });
+}
 
 function bindEvents() {
   const genBtn = document.getElementById("generate-adv-btn");
   const copyBtn = document.getElementById("copy-adv-btn");
   const downloadBtn = document.getElementById("download-adv-btn");
+  const citySelect = document.getElementById("adv-city-select");
+  const dateSelect = document.getElementById("adv-date-select");
 
   if (genBtn) {
     genBtn.addEventListener("click", () => fetchAdvisory());
   }
+
+  [citySelect, dateSelect].forEach((select) => {
+    if (select) {
+      select.addEventListener("change", updateActivePreset);
+    }
+  });
 
   // Persona Tabs
   document.querySelectorAll(".persona-tab").forEach(tab => {
@@ -53,6 +73,7 @@ function bindEvents() {
 
       if (citySelect) citySelect.value = city;
       if (dateSelect) dateSelect.value = date;
+      updateActivePreset();
       fetchAdvisory();
     });
   });

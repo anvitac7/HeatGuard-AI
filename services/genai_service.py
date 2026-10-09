@@ -380,7 +380,7 @@ Municipal authorities in {city} should enforce civic cooling and labor protectio
         }
         for city, aliases in city_aliases.items():
             for alias in aliases:
-                if re.search(rf"\b{alias}\b", t):
+                if re.search(rf"\b{re.escape(alias)}(?:['’]s|s)?\b", t):
                     return city, None
 
         # Common world & Indian cities outside our 7 metros

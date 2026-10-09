@@ -57,7 +57,7 @@
   <div class="control-group">
     <div class="control-item">
       <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Quick Presets:</span>
-      <button class="preset-chip active" data-city="Ahmedabad" data-date="2024-05-23">Ahmedabad 46.6°C Extreme</button>
+      <button class="preset-chip" data-city="Ahmedabad" data-date="2024-05-23">Ahmedabad 46.6°C Extreme</button>
       <button class="preset-chip" data-city="Delhi" data-date="2024-05-28">Delhi 44.3°C Summer</button>
       <button class="preset-chip" data-city="Pune" data-date="2024-06-18">Pune Pre-Monsoon</button>
     </div>
@@ -167,5 +167,5 @@
 
 {% block scripts %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="{{ url_for('static', filename='js/advisory.js') }}?v=4.0"></script>
+<script src="{{ url_for('static', filename='js/advisory.js') }}?v=4.1"></script>
 {% endblock %}
