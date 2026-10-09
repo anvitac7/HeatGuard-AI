@@ -73,12 +73,12 @@
       <i data-feather="check-circle" style="color:var(--risk-normal); width:16px;height:16px;"></i>
     </div>
     <div class="kpi-value-row">
-      <span class="kpi-value">{{ summary.test_accuracy }}%</span>
-      <span class="kpi-unit">Acc</span>
+      <span class="kpi-value">{{ summary.test_balanced_accuracy }}%</span>
+      <span class="kpi-unit">Bal Acc</span>
       <span class="badge badge-normal" style="margin-left:auto;">{{ summary.pr_auc_lift }} Lift</span>
     </div>
     <div class="kpi-subtext">
-      <span>PR-AUC: <strong>{{ summary.test_pr_auc }}</strong> | Balanced: <strong>{{ summary.test_balanced_accuracy }}%</strong></span>
+      <span>PR-AUC: <strong>{{ summary.test_pr_auc }}</strong> | Accuracy: <strong>{{ summary.test_accuracy }}%</strong></span>
     </div>
   </div>
 </div>
