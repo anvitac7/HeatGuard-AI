@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}HeatGuard AI — Operational Heatwave Risk Platform{% endblock %}</title>
+  <title>{% block title %}HeatGuard AI — Heatwave Risk Prototype{% endblock %}</title>
 
   <!-- Prevent Theme & Sidebar Flash (Default is strictly Light Mode) -->
   <script>
@@ -96,8 +96,8 @@
       <!-- Sidebar Telemetry Footer -->
       <div class="sidebar-footer">
         <div class="status-row">
-          <div class="status-indicator" title="Two-Stage Hybrid Engine Active"></div>
-          <span class="footer-status-text">Two-Stage Hybrid Engine Active</span>
+          <div class="status-indicator" title="Local two-stage heatwave prediction model"></div>
+          <span class="footer-status-text">Local ML Prototype</span>
         </div>
         <div class="footer-meta-text" style="margin-top: 0.35rem; font-size: 0.7rem; color: #94a3b8;">
           187,387 records • 7 Indian Metros
@@ -130,10 +130,9 @@
             <span class="theme-toggle-label">Theme</span>
           </button>
 
-          <!-- Production Model Badge with Clean Unicode τ* -->
-          <div class="model-badge" title="Production LightGBM Two-Stage Model Pipeline: 84.40% Balanced Accuracy, 97.68% Test Accuracy, PR-AUC 0.6747">
+          <div class="model-badge" title="Local prototype using scikit-learn HistGradientBoosting models. Decision cutoff: 0.35. Classifier probabilities are not calibrated.">
             <span class="dot"></span>
-            <span>Production ML • τ* = 0.230</span>
+            <span>Local ML Prototype • τ* = 0.35</span>
           </div>
         </div>
       </header>
@@ -148,10 +147,10 @@
       <footer class="site-footer">
         <div class="footer-container">
           <div>
-            <strong>HeatGuard AI</strong> — Operational Climate Early-Warning & Stakeholder Decision Support Platform (1951–2024).
+            <strong>HeatGuard AI</strong> — Heatwave risk prediction and stakeholder decision-support prototype using historical climate data.
           </div>
           <div>
-            LightGBM Huber Departure Regressor + Isotonic Calibrated Classifier • Zero-Hallucination Framework
+            Scikit-learn HistGradientBoosting models • Optional Gemini advisories with deterministic fallback
           </div>
         </div>
       </footer>

@@ -228,11 +228,11 @@
         </div>
         <div class="detail-row">
           <span class="detail-label">Decision Threshold</span>
-          <span class="detail-value" style="font-weight:600;">τ* = 0.350 <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(Isotonic Calibrated)</span></span>
+          <span class="detail-value" id="detail-decision-threshold" style="font-weight:600;">τ* = {{ "%.2f"|format(initial_data.prediction.threshold_applied) if initial_data else "0.35" }} <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(model score cutoff; probabilities are not calibrated)</span></span>
         </div>
         <div class="detail-row">
           <span class="detail-label">Inference Engine</span>
-          <span class="detail-value" style="font-size:0.75rem; color:var(--text-muted);">Stage 1 Huber + Stage 2 HistGBDT</span>
+          <span class="detail-value" style="font-size:0.75rem; color:var(--text-muted);">HistGradientBoosting regressor and classifier</span>
         </div>
       </div>
 

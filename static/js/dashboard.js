@@ -550,6 +550,10 @@ function updateKPICards(data) {
 
 function updateRiskGauge(data) {
   const pred = data.prediction;
+  const decisionThreshold = document.getElementById("detail-decision-threshold");
+  if (decisionThreshold && pred.threshold_applied != null) {
+    decisionThreshold.innerHTML = `τ* = ${Number(pred.threshold_applied).toFixed(2)} <span style="font-size:0.75rem; color:var(--text-muted); font-weight:normal;">(model score cutoff; probabilities are not calibrated)</span>`;
+  }
   const prob = pred.probability_pct; // 0 to 100
   const color = pred.alert_color;
 

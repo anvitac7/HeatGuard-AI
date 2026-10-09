@@ -354,7 +354,7 @@ class PredictionService:
                 "trend": trend,
                 "trend_icon": trend_icon,
                 "threshold_applied": self.predictor.optimal_threshold,
-                "model_version": "TwoStageHybrid-LightGBM-v1.0",
+                "model_version": "TwoStageHeatwavePredictor-v1.0",
             }
         }
 
@@ -562,8 +562,7 @@ class PredictionService:
             "cities_indexed": len(self.city_dfs),
             "feature_count": len(self.predictor.feature_names_),
             "optimal_decision_threshold": self.predictor.optimal_threshold,
-            "model_pipeline": "TwoStageHeatwavePredictor (Huber Regressor + Isotonic LightGBM)",
+            "model_pipeline": "TwoStageHeatwavePredictor (HistGradientBoosting regressors and classifier; uncalibrated probabilities)",
             "memory_resident": True,
-            "version": "1.0.0-production",
+            "version": "1.0.0-prototype",
         }
-

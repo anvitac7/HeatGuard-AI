@@ -150,15 +150,15 @@
       </div>
     </div>
 
-    <!-- Scientific Guardrails & Hallucination Prevention -->
+    <!-- Advisory data and generation notes -->
     <div class="info-callout">
       <h3 style="font-size:0.92rem; font-weight:700; color:var(--brand-600); display:flex; align-items:center; gap:0.4rem; margin-bottom:0.4rem;">
         <i data-feather="shield" style="color:var(--brand-600); width:16px;height:16px;"></i>
-        <span>Zero-Hallucination Framework</span>
+        <span>Model-Grounded Advisory Context</span>
       </h3>
       <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.5;">
-        Every advisory sentence is strictly grounded in the numerical output of our Two-Stage Hybrid Engine.
-        Temperatures, departures, and probability scores are passed directly from verified LightGBM inference.
+        The advisory uses model-produced temperatures, departures, and risk estimates as context.
+        Gemini generates the narrative when available; a deterministic fallback is used if generation fails.
       </p>
     </div>
   </div>
