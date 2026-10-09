@@ -31,6 +31,7 @@ Extreme heat events pose grave threats to public health, agriculture, and munici
 - **Two-Stage Hybrid ML Engine:** Combines a continuous temperature departure regressor ($R^2 = 0.8690$, $\text{MAE} = 1.08^\circ\text{C}$) with an isotonically calibrated cost-sensitive LightGBM classifier ($\text{Brier} = 0.0164$, $\text{PR-AUC} = 0.6747$).
 - **Physics-Grounded IMD Severity Mapping:** Maps continuous departures to IMD risk tiers (`Normal`, `Warning`, `Severe`, `Extreme`) avoiding class-imbalance collapse on rare extremes.
 - **Multi-Stakeholder GenAI Advisories:** Translates verified ML predictions into hallucination-free, targeted actionable guidance for 4 distinct personas: **Citizens**, **Farmers**, **Health Agencies**, and **Municipal Authorities**.
+- **Combined Stakeholder Advisory PDF:** From the dashboard, generate and download one PDF containing the forecast context, full advisory, and priority checklist for all four personas for the selected city and date.
 - **Interactive Grounded Chatbot (HeatGuard Copilot):** Conversational meteorological copilot powered by Gemini Flash (with zero-downtime deterministic fallback) supporting past/observed weather, forward predictions, 5-day autoregressive rolls, 7-day extended forecasts, 74-year historical climatology, and prompt-anchored UI scrolling.
 - **Dynamic Dual-Theme Web Platform:** High-contrast cyber dark mode and crisp light mode featuring Vice-Versa sidebar elevation, Leaflet.js interactive geospatial map, Chart.js 74-year climate analytics, and Counterfactual Climate Stress Simulator.
 

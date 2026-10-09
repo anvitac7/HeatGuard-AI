@@ -6,6 +6,7 @@
 
 let currentAudience = "Citizen";
 let rawAdvisoryText = "";
+let currentAdvisory = null;
 
 document.addEventListener("DOMContentLoaded", () => {
   // Check URL parameters for pre-selected city & date from Dashboard
@@ -72,23 +73,165 @@ function bindEvents() {
     });
   }
 
-  // Download .txt
+  // Download the complete advisory report as a PDF.
   if (downloadBtn) {
     downloadBtn.addEventListener("click", () => {
-      if (!rawAdvisoryText) return;
-      const city = document.getElementById("adv-city-select").value;
-      const date = document.getElementById("adv-date-select").value;
-      const blob = new Blob([rawAdvisoryText], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `HeatGuard_Advisory_${city}_${date}_${currentAudience.replace(/\s+/g, '_')}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadAdvisoryPdf();
     });
   }
+}
+
+function downloadAdvisoryPdf() {
+  const JsPDF = window.jspdf && window.jspdf.jsPDF;
+  if (!JsPDF) {
+    console.error("PDF export is unavailable because the PDF library did not load.");
+    alert("PDF export is unavailable right now. Please check your connection and try again.");
+    return;
+  }
+  if (!currentAdvisory || !rawAdvisoryText) {
+    alert("Generate an advisory before exporting it.");
+    return;
+  }
+
+  const doc = new JsPDF({ unit: "mm", format: "a4" });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 18;
+  const textWidth = pageWidth - margin * 2;
+  let y = 20;
+
+  const ensureSpace = (height) => {
+    if (y + height > pageHeight - 18) {
+      doc.addPage();
+      y = 20;
+    }
+  };
+
+  const writeText = (text, options = {}) => {
+    const fontSize = options.fontSize || 10;
+    const indent = options.indent || 0;
+    const lineHeight = options.lineHeight || fontSize * 0.48;
+    doc.setFont("helvetica", options.bold ? "bold" : "normal");
+    doc.setFontSize(fontSize);
+    doc.setTextColor(...(options.color || [31, 41, 55]));
+    const lines = doc.splitTextToSize(String(text), textWidth - indent);
+    lines.forEach((line) => {
+      ensureSpace(lineHeight);
+      doc.text(line, margin + indent, y);
+      y += lineHeight;
+    });
+  };
+
+  const personaTitle = currentAdvisory.persona_info?.title || currentAdvisory.audience || currentAudience;
+  const city = currentAdvisory.city || document.getElementById("adv-city-select").value;
+  const targetDate = currentAdvisory.target_date || document.getElementById("adv-date-select").value;
+  const departure = Number(currentAdvisory.predicted_departure);
+  const departureText = `${departure >= 0 ? "+" : ""}${departure.toFixed(1)} C`;
+
+  doc.setFillColor(15, 118, 110);
+  doc.rect(0, 0, pageWidth, 5, "F");
+  writeText("HeatGuard AI", { fontSize: 19, bold: true, color: [15, 76, 73], lineHeight: 9 });
+  writeText("Grounded Climate Early-Warning Advisory Report", { fontSize: 10, color: [71, 85, 105], lineHeight: 7 });
+  y += 3;
+  writeText(`Advisory for ${personaTitle}`, { fontSize: 15, bold: true, color: [15, 23, 42], lineHeight: 8 });
+  if (currentAdvisory.persona_info?.tagline) {
+    writeText(currentAdvisory.persona_info.tagline, { fontSize: 9, color: [71, 85, 105], lineHeight: 6 });
+  }
+  y += 3;
+
+  doc.setDrawColor(203, 213, 225);
+  doc.setFillColor(248, 250, 252);
+  doc.roundedRect(margin, y, textWidth, 35, 2, 2, "FD");
+  const contextTop = y + 7;
+  const riskTier = `${currentAdvisory.risk_level} (${currentAdvisory.severity})`;
+  y = contextTop;
+  writeText(`City: ${city}    Forecast date: ${targetDate}`, {
+    fontSize: 10, bold: true, indent: 5, lineHeight: 6
+  });
+  y = contextTop + 7;
+  writeText(
+    `Predicted maximum: ${Number(currentAdvisory.predicted_temp_max).toFixed(1)} C    Departure: ${departureText}`,
+    { fontSize: 10, indent: 5, lineHeight: 6 }
+  );
+  y += 1;
+  writeText(
+    `Heatwave probability: ${Number(currentAdvisory.probability_pct).toFixed(1)}%    Risk tier: ${riskTier}`,
+    { fontSize: 10, indent: 5, lineHeight: 6 }
+  );
+  y += 7;
+
+  writeText("Advisory Details", { fontSize: 12, bold: true, color: [15, 76, 73], lineHeight: 7 });
+  y += 1;
+  rawAdvisoryText.split(/\r?\n/).forEach((rawLine) => {
+    const line = rawLine.trim();
+    if (!line) {
+      y += 2;
+      return;
+    }
+
+    const heading = line.match(/^#{1,4}\s+(.*)$/);
+    if (heading) {
+      y += 2;
+      writeText(heading[1].replace(/\*\*/g, ""), {
+        fontSize: heading[0].startsWith("## ") ? 12 : 11,
+        bold: true,
+        color: [15, 23, 42],
+        lineHeight: 6
+      });
+      y += 1;
+      return;
+    }
+
+    const listItem = line.match(/^(\s*)(?:[-*]|\d+\.)\s+(.*)$/);
+    const content = (listItem ? listItem[2] : line)
+      .replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)");
+    writeText(listItem ? `- ${content}` : content, {
+      indent: listItem ? 3 : 0,
+      lineHeight: 5
+    });
+    y += 1;
+  });
+
+  ensureSpace(16);
+  y += 3;
+  writeText("Priority Action Checklist", { fontSize: 12, bold: true, color: [15, 76, 73], lineHeight: 7 });
+  const checklist = currentAdvisory.priority_checklist || [];
+  if (checklist.length) {
+    checklist.forEach((item, index) => {
+      const checkbox = document.querySelector(`#checklist-items input[id="chk-${index}"]`);
+      writeText(`${checkbox?.checked ? "[x]" : "[ ]"} ${item}`, { indent: 2, lineHeight: 5 });
+      y += 1;
+    });
+  } else {
+    writeText("No critical action items for this risk level.", { lineHeight: 5 });
+  }
+
+  y += 4;
+  writeText(`Grounding status: ${currentAdvisory.guardrail_status || "Verified prediction context"}`, {
+    fontSize: 9, color: [71, 85, 105], lineHeight: 5
+  });
+  writeText(`Report generated: ${new Date().toLocaleString()}`, {
+    fontSize: 9, color: [71, 85, 105], lineHeight: 5
+  });
+
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let page = 1; page <= pageCount; page += 1) {
+    doc.setPage(page);
+    doc.setDrawColor(226, 232, 240);
+    doc.line(margin, pageHeight - 13, pageWidth - margin, pageHeight - 13);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text("HeatGuard AI - Operational Climate Early-Warning", margin, pageHeight - 8);
+    doc.text(`Page ${page} of ${pageCount}`, pageWidth - margin, pageHeight - 8, { align: "right" });
+  }
+
+  const safeCity = city.replace(/[^a-z0-9_-]+/gi, "_");
+  const safeAudience = String(currentAdvisory.audience || currentAudience).replace(/[^a-z0-9_-]+/gi, "_");
+  doc.save(`HeatGuard_Advisory_${safeCity}_${targetDate}_${safeAudience}.pdf`);
 }
 
 async function fetchAdvisory() {
@@ -127,6 +270,7 @@ async function fetchAdvisory() {
 }
 
 function renderAdvisory(adv) {
+  currentAdvisory = adv;
   rawAdvisoryText = adv.advisory_markdown;
 
   // Update Context Chips

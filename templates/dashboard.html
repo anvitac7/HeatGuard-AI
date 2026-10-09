@@ -237,9 +237,9 @@
       </div>
 
       <!-- Action: Open Advisory Studio -->
-      <a href="{{ url_for('advisory_view') }}" id="generate-advisory-link" class="btn btn-primary" style="width:100%; margin-top:0.25rem;">
+      <a href="{{ url_for('advisory_view') }}" id="generate-advisory-link" class="btn btn-primary" style="width:100%; margin-top:0.25rem;" title="Generate and download one PDF with advisories for all four stakeholder personas">
         <i data-feather="file-text" style="width:15px;height:15px;"></i>
-        <span>Generate Stakeholder Advisory</span>
+        <span>Generate All-Persona Advisory PDF</span>
       </a>
     </div>
   </div>
@@ -394,5 +394,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=7.0"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}?v=8.0"></script>
 {% endblock %}

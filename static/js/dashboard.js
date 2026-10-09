@@ -116,6 +116,7 @@ function bindEvents() {
   const dateSelect = document.getElementById("date-select");
   const runBtn = document.getElementById("run-predict-btn");
   const refreshAllBtn = document.getElementById("refresh-all-btn");
+  const generateAdvisoryLink = document.getElementById("generate-advisory-link");
 
   // Listen for dark/light theme switch
   window.addEventListener("themechanged", (e) => {
@@ -131,10 +132,207 @@ function bindEvents() {
     });
   }
 
+  if (generateAdvisoryLink) {
+    generateAdvisoryLink.addEventListener("click", (event) => {
+      event.preventDefault();
+      generateAllPersonaAdvisoryPdf(citySelect.value, dateSelect.value, generateAdvisoryLink);
+    });
+  }
+
   if (citySelect) {
     citySelect.addEventListener("change", () => {
       loadPrediction(citySelect.value, dateSelect.value);
     });
+  }
+
+  async function generateAllPersonaAdvisoryPdf(city, date, button) {
+    if (button.dataset.generating === "true") return;
+
+    const JsPDF = window.jspdf && window.jspdf.jsPDF;
+    if (!JsPDF) {
+      alert("PDF generation is unavailable because the PDF library did not load. Please check your connection and try again.");
+      return;
+    }
+
+    const originalHtml = button.innerHTML;
+    const originalPointerEvents = button.style.pointerEvents;
+    button.dataset.generating = "true";
+    button.disabled = true;
+    button.setAttribute("aria-disabled", "true");
+    button.style.pointerEvents = "none";
+    button.innerHTML = `<span>Generating 4 stakeholder advisories...</span>`;
+
+    try {
+      const audiences = ["Citizen", "Farmer", "Health Agency", "Municipal Authority"];
+      const advisories = [];
+
+      for (const audience of audiences) {
+        const response = await fetch("/api/advisory", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ city, date, audience })
+        });
+        const result = await response.json();
+        if (!response.ok || result.status !== "success" || !result.advisory) {
+          throw new Error(result.message || `Could not generate the ${audience} advisory.`);
+        }
+        advisories.push(result.advisory);
+        button.innerHTML = `<span>Generated ${advisories.length} of ${audiences.length} advisories...</span>`;
+      }
+
+      const doc = new JsPDF({ unit: "mm", format: "a4" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const margin = 18;
+      const contentWidth = pageWidth - margin * 2;
+      let y = 20;
+
+      const addPage = () => {
+        doc.addPage();
+        y = 20;
+      };
+
+      const ensureSpace = (height) => {
+        if (y + height > pageHeight - 18) addPage();
+      };
+
+      const writeText = (text, options = {}) => {
+        const fontSize = options.fontSize || 10;
+        const lineHeight = options.lineHeight || 5;
+        const indent = options.indent || 0;
+        doc.setFont("helvetica", options.bold ? "bold" : "normal");
+        doc.setFontSize(fontSize);
+        doc.setTextColor(...(options.color || [31, 41, 55]));
+        const lines = doc.splitTextToSize(String(text), contentWidth - indent);
+        lines.forEach((line) => {
+          ensureSpace(lineHeight);
+          doc.text(line, margin + indent, y);
+          y += lineHeight;
+        });
+      };
+
+      const cleanMarkdown = (text) => text
+        .replace(/\*\*(.*?)\*\*/g, "$1")
+        .replace(/\*(.*?)\*/g, "$1")
+        .replace(/`([^`]+)`/g, "$1")
+        .replace(/\[([^\]]+)\]\(([^)]+)\)/g, "$1 ($2)");
+
+      advisories.forEach((advisory, index) => {
+        if (index > 0) addPage();
+
+        doc.setFillColor(15, 118, 110);
+        doc.rect(0, 0, pageWidth, 5, "F");
+        writeText("HeatGuard AI", { fontSize: 19, bold: true, color: [15, 76, 73], lineHeight: 9 });
+        writeText("Combined Stakeholder Advisory Report", {
+          fontSize: 10, color: [71, 85, 105], lineHeight: 7
+        });
+        y += 3;
+        writeText(`Advisory for ${advisory.persona_info?.title || advisory.audience}`, {
+          fontSize: 15, bold: true, color: [15, 23, 42], lineHeight: 8
+        });
+        if (advisory.persona_info?.tagline) {
+          writeText(advisory.persona_info.tagline, { fontSize: 9, color: [71, 85, 105], lineHeight: 6 });
+        }
+        y += 3;
+
+        doc.setDrawColor(203, 213, 225);
+        doc.setFillColor(248, 250, 252);
+        doc.roundedRect(margin, y, contentWidth, 38, 2, 2, "FD");
+        const contextTop = y + 7;
+        y = contextTop;
+        writeText(`City: ${advisory.city}    Forecast date: ${advisory.target_date}`, {
+          fontSize: 10, bold: true, indent: 5, lineHeight: 6
+        });
+        y = contextTop + 7;
+        const departure = Number(advisory.predicted_departure);
+        writeText(
+          `Predicted maximum: ${Number(advisory.predicted_temp_max).toFixed(1)} C    Departure: ${departure >= 0 ? "+" : ""}${departure.toFixed(1)} C`,
+          { fontSize: 10, indent: 5, lineHeight: 6 }
+        );
+        y += 1;
+        writeText(
+          `Heatwave probability: ${Number(advisory.probability_pct).toFixed(1)}%    Risk tier: ${advisory.risk_level} (${advisory.severity})`,
+          { fontSize: 10, indent: 5, lineHeight: 6 }
+        );
+        y += 8;
+
+        writeText("Advisory Details", { fontSize: 12, bold: true, color: [15, 76, 73], lineHeight: 7 });
+        y += 1;
+        String(advisory.advisory_markdown || "").split(/\r?\n/).forEach((rawLine) => {
+          const line = rawLine.trim();
+          if (!line) {
+            y += 2;
+            return;
+          }
+          const heading = line.match(/^#{1,4}\s+(.*)$/);
+          if (heading) {
+            y += 2;
+            writeText(cleanMarkdown(heading[1]), {
+              fontSize: heading[0].startsWith("## ") ? 12 : 11,
+              bold: true,
+              color: [15, 23, 42],
+              lineHeight: 6
+            });
+            y += 1;
+            return;
+          }
+          const listItem = line.match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);
+          writeText(listItem ? `- ${cleanMarkdown(listItem[1])}` : cleanMarkdown(line), {
+            indent: listItem ? 3 : 0,
+            lineHeight: 5
+          });
+          y += 1;
+        });
+
+        ensureSpace(16);
+        y += 3;
+        writeText("Priority Action Checklist", { fontSize: 12, bold: true, color: [15, 76, 73], lineHeight: 7 });
+        const checklist = advisory.priority_checklist || [];
+        if (checklist.length) {
+          checklist.forEach((item) => {
+            writeText(`[ ] ${item}`, { indent: 2, lineHeight: 5 });
+            y += 1;
+          });
+        } else {
+          writeText("No critical action items for this risk level.", { lineHeight: 5 });
+        }
+
+        y += 4;
+        writeText(`Grounding status: ${advisory.guardrail_status || "Verified prediction context"}`, {
+          fontSize: 9, color: [71, 85, 105], lineHeight: 5
+        });
+        if (index === 0) {
+          writeText(`Report generated: ${new Date().toLocaleString()}`, {
+            fontSize: 9, color: [71, 85, 105], lineHeight: 5
+          });
+        }
+      });
+
+      const pageCount = doc.internal.getNumberOfPages();
+      for (let page = 1; page <= pageCount; page += 1) {
+        doc.setPage(page);
+        doc.setDrawColor(226, 232, 240);
+        doc.line(margin, pageHeight - 13, pageWidth - margin, pageHeight - 13);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(8);
+        doc.setTextColor(100, 116, 139);
+        doc.text("HeatGuard AI - Stakeholder Advisory Report", margin, pageHeight - 8);
+        doc.text(`Page ${page} of ${pageCount}`, pageWidth - margin, pageHeight - 8, { align: "right" });
+      }
+
+      const safeCity = city.replace(/[^a-z0-9_-]+/gi, "_");
+      doc.save(`HeatGuard_Stakeholder_Advisories_${safeCity}_${date}.pdf`);
+    } catch (error) {
+      console.error("Combined stakeholder advisory PDF generation failed:", error);
+      alert(`Could not generate the combined stakeholder PDF: ${error.message}`);
+    } finally {
+      button.innerHTML = originalHtml;
+      button.disabled = false;
+      button.removeAttribute("aria-disabled");
+      button.style.pointerEvents = originalPointerEvents;
+      delete button.dataset.generating;
+      feather.replace();
+    }
   }
 
   if (dateSelect) {

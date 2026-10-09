@@ -141,6 +141,7 @@ HeatGuard AI predicts **next-day heatwaves ($t+1$)** for 7 Indian cities and tur
 **Files created:** `templates/advisory.html`, `templates/chatbot.html`, `static/js/advisory.js`, `static/js/chat.js`
 - [x] Advisory Studio UI (`templates/advisory.html`): 4 Persona tabs (Citizen, Farmer, Health Agency, Municipality)
 - [x] Priority action checklist with interactive completion checkboxes and clipboard copy
+- [x] Dashboard action to generate a single PDF with forecast context, full advisory, and checklist for all four personas
 - [x] Chatbot Interface (`templates/chatbot.html`, `static/js/chat.js`): Grounded meteorological assistant with suggested prompt chips and citations
 - [x] Zero-hallucination guardrails and fallback deterministic knowledge engine
 
@@ -178,6 +179,7 @@ All phases (0 through 8) are completely implemented, thoroughly tested, and prod
 
 | Date | Who | What |
 |---|---|---|
+| 2026-10-09 | Copilot & User | Added dashboard PDF generation for all four stakeholder personas (Citizen, Farmer, Health Agency, Municipal Authority) for the selected city/date, including prediction context, full advisory text, priority checklist, and page numbering. |
 | 2026-10-09 | Antigravity & User | Conversational Copilot & Horizon Upgrade: Upgraded `GenAIService` to provide complete, detailed meteorological breakdowns (Tmax, Tmin, Diurnal Spread, 3-Day Momentum, Calibrated HW Probability %, IMD Threshold Departure, and City-Specific Atmospheric/Sea Breeze dynamics). Added dedicated multi-day & weekly horizon intelligence handling queries like "how about a week from today" with 5-Day Autoregressive Rolls and expanding uncertainty bounds (±1.5°C to ±2.8°C). All 16 integration test suites pass with 100% success. |
 | 2026-10-06 | Antigravity & User | Frontend & Backend Cyber Transformation: Redesigned the entire UI into an electric cyber dark theme with vibrant neon blue (`#00f0ff`) HUD styling, cyber cards, animated radar pulses, and dark-themed Leaflet popups. Expanded the backend suite with `/api/simulate` (Counterfactual Stress Simulator), `/api/forecast/<city>` (autoregressive multi-horizon roll), `/api/alerts/dispatch` (emergency alert simulator), and `/api/health` (model telemetry). Verified all 16 integration test suites (`test_suite.py`) with 100% pass rate. |
 | 2026-10-05 | Antigravity & User | Phases 5, 6, 7, 8 done: Built full-stack Flask application (`app.py`), backend services (`prediction_service.py`, `analytics_service.py`, `genai_service.py`), and glassmorphism frontend (`templates/` and `static/`). Implemented Leaflet geospatial map with pulsing markers and thermal heat layer, animated circular confidence gauge, 14-day Chart.js trajectory, 74-Year Climate Analytics Explorer, 4-persona Advisory Studio (Citizen, Farmer, Health Agency, Municipality), and grounded AI Chatbot. 100% integration tests passed. |

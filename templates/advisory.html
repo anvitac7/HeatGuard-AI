@@ -100,7 +100,7 @@
         <button id="copy-adv-btn" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.78rem;" title="Copy to clipboard">
           <i data-feather="copy" style="width:13px;height:13px;"></i> Copy
         </button>
-        <button id="download-adv-btn" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.78rem;" title="Download .txt file">
+        <button id="download-adv-btn" class="btn btn-outline" style="padding:0.4rem 0.8rem; font-size:0.78rem;" title="Download the full advisory report as a PDF">
           <i data-feather="download" style="width:13px;height:13px;"></i> Export
         </button>
       </div>
@@ -166,5 +166,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/advisory.js') }}?v=3.0"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/advisory.js') }}?v=4.0"></script>
 {% endblock %}
