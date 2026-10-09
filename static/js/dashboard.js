@@ -88,6 +88,29 @@ function initMap() {
 // ----------------------------------------------------------------------------------------
 // 2. Event Listeners & Preset Handlers
 // ----------------------------------------------------------------------------------------
+function advanceSelectedDateByOneDay() {
+  const citySelect = document.getElementById("city-select");
+  const dateSelect = document.getElementById("date-select");
+  if (!citySelect || !dateSelect || !dateSelect.value) return;
+
+  const currentDate = new Date(dateSelect.value + "T00:00:00");
+  if (Number.isNaN(currentDate.getTime())) return;
+
+  const maxDate = dateSelect.max ? new Date(dateSelect.max + "T00:00:00") : null;
+  const nextDate = new Date(currentDate);
+  nextDate.setDate(nextDate.getDate() + 1);
+
+  if (maxDate && nextDate > maxDate) return;
+
+  const year = nextDate.getFullYear();
+  const month = String(nextDate.getMonth() + 1).padStart(2, "0");
+  const day = String(nextDate.getDate()).padStart(2, "0");
+  const nextDateStr = `${year}-${month}-${day}`;
+
+  dateSelect.value = nextDateStr;
+  loadPrediction(citySelect.value, nextDateStr);
+}
+
 function bindEvents() {
   const citySelect = document.getElementById("city-select");
   const dateSelect = document.getElementById("date-select");
@@ -104,7 +127,7 @@ function bindEvents() {
 
   if (runBtn) {
     runBtn.addEventListener("click", () => {
-      loadPrediction(citySelect.value, dateSelect.value);
+      advanceSelectedDateByOneDay();
     });
   }
 
