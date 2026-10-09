@@ -63,7 +63,7 @@ function initMap() {
   map = L.map("leaflet-map", {
     center: [28.6139, 77.2090],
     zoom: 11,
-    minZoom: 9,
+    minZoom: 4,
     maxZoom: 14,
     dragging: false,
     touchZoom: false,
@@ -109,6 +109,57 @@ function advanceSelectedDateByOneDay() {
 
   dateSelect.value = nextDateStr;
   loadPrediction(citySelect.value, nextDateStr);
+}
+
+async function synchronizeAllMetros(date, selectedCity, button) {
+  if (button.disabled) return;
+
+  const originalHtml = button.innerHTML;
+  button.disabled = true;
+  button.innerHTML = `<span>Synchronizing 7 metros...</span>`;
+
+  try {
+    const response = await fetch("/api/predict-all", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ date })
+    });
+    const result = await response.json();
+
+    if (!response.ok || result.status !== "success") {
+      throw new Error(result.message || "The all-city forecast request failed.");
+    }
+
+    const cities = result.cities || [];
+    if (cities.length !== 7) {
+      throw new Error(`Only ${cities.length} of 7 metro forecasts were returned. Please retry.`);
+    }
+
+    const selectedData = cities.find((item) => item.city === selectedCity);
+    if (!selectedData) {
+      throw new Error(`No forecast was returned for the selected city, ${selectedCity}.`);
+    }
+
+    currentCityData = selectedData;
+    updateKPICards(selectedData);
+    updateRiskGauge(selectedData);
+    updateTrajectoryChart(selectedCity, date);
+    updateAllMetroMap(cities, date, selectedCity);
+
+    button.innerHTML = `<i data-feather="check" style="width:13px;height:13px;"></i><span>7 Metros Synced</span>`;
+    feather.replace();
+    window.setTimeout(() => {
+      button.innerHTML = originalHtml;
+      feather.replace();
+    }, 2500);
+  } catch (error) {
+    console.error("Failed to synchronize forecasts for all metros:", error);
+    alert(`Could not synchronize all 7 metros: ${error.message}`);
+    button.innerHTML = originalHtml;
+    feather.replace();
+  } finally {
+    button.disabled = false;
+  }
 }
 
 function bindEvents() {
@@ -343,7 +394,7 @@ function bindEvents() {
 
   if (refreshAllBtn) {
     refreshAllBtn.addEventListener("click", () => {
-      loadPrediction(citySelect.value, dateSelect.value);
+      synchronizeAllMetros(dateSelect.value, citySelect.value, refreshAllBtn);
     });
   }
 
@@ -545,6 +596,67 @@ function updateRiskGauge(data) {
 // ----------------------------------------------------------------------------------------
 // 5. Single-City Geospatial Station Monitor (Locked & Centered)
 // ----------------------------------------------------------------------------------------
+function updateAllMetroMap(cities, date, selectedCity) {
+  if (!map || !markersLayer) return;
+
+  markersLayer.clearLayers();
+  const bounds = [];
+  const forecastDate = cities[0]?.target_date || date;
+
+  cities.forEach((data) => {
+    const meta = CITY_COORDS[data.city];
+    const pred = data.prediction;
+    if (!meta || !pred) return;
+
+    bounds.push([meta.lat, meta.lon]);
+    const color = pred.alert_color || "#16a34a";
+    const marker = L.marker([meta.lat, meta.lon], {
+      icon: L.divIcon({
+        className: "city-station-marker",
+        iconSize: [38, 38],
+        iconAnchor: [19, 19],
+        html: `<div class="station-badge" style="background:${color};"><span>${pred.predicted_temp_max.toFixed(0)}°</span></div>`
+      })
+    }).addTo(markersLayer);
+
+    marker.bindPopup(`
+      <div style="font-family:var(--font-sans); color:#0f172a; min-width:200px; padding:4px;">
+        <div style="font-weight:700; font-size:1rem; margin-bottom:0.15rem;">${data.city} Forecast</div>
+        <div style="font-size:0.75rem; color:#64748b; margin-bottom:0.5rem;">${meta.state} · ${meta.lat.toFixed(4)}°N, ${meta.lon.toFixed(4)}°E</div>
+        <div style="display:flex; justify-content:space-between; margin-bottom:0.3rem; font-size:0.8rem;">
+          <span style="color:#64748b;">Predicted max:</span>
+          <strong>${pred.predicted_temp_max.toFixed(1)}°C</strong>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+          <span style="color:#64748b;">Heatwave risk:</span>
+          <strong style="color:${color};">${pred.risk_level} (${pred.probability_pct.toFixed(1)}%)</strong>
+        </div>
+      </div>
+    `);
+  });
+
+  if (bounds.length) {
+    map.invalidateSize();
+    map.fitBounds(bounds, { padding: [24, 24], maxZoom: 5, animate: true });
+  }
+
+  const mapCityName = document.getElementById("map-city-name");
+  if (mapCityName) mapCityName.innerText = "All 7 Metros";
+  const overlayCity = document.getElementById("overlay-city");
+  if (overlayCity) overlayCity.innerText = "All 7 Metro Forecasts";
+  const overlayCoords = document.getElementById("overlay-coords");
+  if (overlayCoords) overlayCoords.innerText = "Select a marker to inspect a city";
+  const overlayThreshold = document.getElementById("overlay-threshold");
+  if (overlayThreshold) overlayThreshold.innerText = `Observation date: ${date}`;
+  const mapDateEl = document.getElementById("map-target-date");
+  if (mapDateEl) mapDateEl.innerText = forecastDate;
+  const stationStatus = document.getElementById("station-status-badge");
+  if (stationStatus) {
+    stationStatus.innerText = `7 Metros Synced · ${selectedCity} selected`;
+    stationStatus.className = "badge badge-normal";
+  }
+}
+
 function updateCityStationMap(city, data) {
   if (!map || !CITY_COORDS[city]) return;
   const meta = CITY_COORDS[city];
@@ -552,6 +664,11 @@ function updateCityStationMap(city, data) {
   // Update card header and overlay telemetry texts
   const mapCityName = document.getElementById("map-city-name");
   if (mapCityName) mapCityName.innerText = city;
+  const stationStatus = document.getElementById("station-status-badge");
+  if (stationStatus) {
+    stationStatus.innerHTML = '<i data-feather="radio" style="width:12px;height:12px;"></i> Station Active';
+    stationStatus.className = "badge badge-normal";
+  }
 
   const overlayCity = document.getElementById("overlay-city");
   if (overlayCity) overlayCity.innerText = `${city} (${meta.state})`;
