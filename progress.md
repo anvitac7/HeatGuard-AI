@@ -22,6 +22,7 @@ HeatGuard AI loads historical daily weather observations for seven Indian cities
 | PDF outputs | Single-persona PDF from the Advisory Studio and combined four-persona PDF from the dashboard. | `static/js/advisory.js`, `static/js/dashboard.js` |
 | Scenario and forecast APIs | Feature-perturbation scenario comparison and a multi-step forecast endpoint. | `/api/simulate`, `/api/forecast/<city>` |
 | Simulated dispatch | Creates a demo receipt from the prediction; no external alert is transmitted. | `/api/alerts/dispatch` |
+| Responsible AI & Ethics | Three-pillar backend service: 7-city fairness & bias audit, global/local Explainable AI (XAI), and multi-point GenAI advisory safety audit. | `services/ethics_service.py`, `HeatGuardAI_Ethics.md` |
 | Integration checks | Flask routes and prediction/analytics/advisory/chat/scenario APIs were exercised by the test suite. | `test_suite.py` |
 
 ## Current saved-model evaluation
@@ -63,3 +64,5 @@ The stored probability outputs are not wrapped in a calibration estimator. The B
 | 2026-10-09 | Added single-persona advisory PDF export, all-city map synchronization, and selected-date advancement. |
 | 2026-10-09 | Ran the Flask integration suite and recomputed held-out test metrics from the saved runtime model. |
 | 2026-10-09 | Revised project documentation and showcase report to describe implemented behavior and its current limits. |
+| 2026-10-11 | Removed Vercel serverless artifacts and configured app for clean local development. |
+| 2026-10-11 | Implemented `services/ethics_service.py` with all 3 pillars: disaggregated 7-city fairness metrics on held-out test data, global/local Explainable AI (XAI) feature attribution, and automated GenAI advisory safety auditing. |

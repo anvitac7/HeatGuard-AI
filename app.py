@@ -49,43 +49,6 @@ app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "heatguard-ai-secret-2026")
 def healthz():
     return {"status": "ok"}, 200
 
-@app.route("/static/<path:filename>")
-def serve_static(filename):
-    """Explicit static file server with multi-environment directory resolution."""
-    candidates = [
-        BASE_DIR / "static",
-        BASE_DIR / "public" / "static",
-        Path.cwd() / "static",
-        Path.cwd() / "public" / "static",
-        Path(os.environ.get("LAMBDA_TASK_ROOT", "/var/task")) / "static",
-        Path("/var/task") / "static",
-    ]
-    for c in candidates:
-        if (c / filename).exists():
-            return send_from_directory(str(c), filename)
-    return jsonify({"error": f"Static asset {filename} not found"}), 404
-
-
-class StripApiPrefixMiddleware:
-    """WSGI middleware to normalize PATH_INFO from Vercel serverless rewrites."""
-
-    def __init__(self, wsgi_app):
-        self.wsgi_app = wsgi_app
-
-    def __call__(self, environ, start_response):
-        path_info = environ.get("PATH_INFO", "")
-        for prefix in ["/api/index.py", "/api/index"]:
-            if path_info == prefix or path_info == prefix + "/":
-                environ["PATH_INFO"] = "/"
-                break
-            elif path_info.startswith(prefix + "/"):
-                environ["PATH_INFO"] = path_info[len(prefix):]
-                break
-        return self.wsgi_app(environ, start_response)
-
-
-app.wsgi_app = StripApiPrefixMiddleware(app.wsgi_app)
-
 # Lazy-loaded services
 _pred_service: PredictionService = None
 _analytics_service: AnalyticsService = None
@@ -118,8 +81,6 @@ def get_genai_service() -> GenAIService:
 # ----------------------------------------------------------------------------------------
 @app.route("/")
 @app.route("/dashboard")
-@app.route("/api/index")
-@app.route("/api/index.py")
 def dashboard_view():
     """Live Heatwave Command Center."""
     pred_svc = get_prediction_service()

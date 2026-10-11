@@ -132,7 +132,7 @@ class TwoStageHeatwavePredictor:
         self.regressor_p90.fit(X_train, y_train_reg)
 
         # --------------------------------------------------------------------------------
-        # 2. Fit Stage 2: Cost-Sensitive Classifier
+        # 2. Fit Stage 2: Cost-Sensitive Classifier with Calibration
         # --------------------------------------------------------------------------------
         self.base_classifier = HistGradientBoostingClassifier(
             class_weight="balanced",
@@ -143,7 +143,24 @@ class TwoStageHeatwavePredictor:
             random_state=self.random_state,
         )
         self.base_classifier.fit(X_train, y_train_clf)
-        self.calibrated_classifier = self.base_classifier
+
+        if X_val is not None and y_val_clf is not None:
+            try:
+                from sklearn.frozen import FrozenEstimator
+                cal_est = FrozenEstimator(self.base_classifier)
+                self.calibrated_classifier = CalibratedClassifierCV(
+                    estimator=cal_est,
+                    method=self.calibration_method,
+                )
+            except Exception:
+                self.calibrated_classifier = CalibratedClassifierCV(
+                    estimator=self.base_classifier,
+                    method=self.calibration_method,
+                    cv="prefit",
+                )
+            self.calibrated_classifier.fit(X_val, y_val_clf)
+        else:
+            self.calibrated_classifier = self.base_classifier
 
         self.is_fitted_ = True
         return self
