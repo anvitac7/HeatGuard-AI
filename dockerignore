@@ -1,0 +1,17 @@
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+.git/
+.github/
+.vscode/
+.idea/
+.pytest_cache/
+.env
+notebooks/
+public/
+data/heatguard_raw.csv
+*.docx
+*.md
+!README.md

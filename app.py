@@ -45,6 +45,9 @@ app = Flask(
 )
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "heatguard-ai-secret-2026")
 
+@app.route("/healthz")
+def healthz():
+    return {"status": "ok"}, 200
 
 @app.route("/static/<path:filename>")
 def serve_static(filename):
