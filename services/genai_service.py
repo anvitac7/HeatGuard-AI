@@ -185,7 +185,7 @@ PREDICTION CONTEXT:
 - Observed Day t Temp: {cur_tmax}°C (3-Day Moving Average: {t3d}°C)
 - Next-Day Predicted Max Temp: {pred_tmax}°C (80% Confidence Interval: [{p10}°C to {p90}°C])
 - Temperature Departure: {departure:+.2f}°C relative to IMD threshold
-- Calibrated Heatwave Probability: {prob}%
+- Heatwave Probability (uncalibrated model score): {prob}%
 - Assessed Risk Level: {risk}
 - Predicted Severity Tier: {severity}
 - Target Audience Persona: {audience} ({PERSONA_CONFIGS[audience]['title']})
@@ -220,7 +220,7 @@ DIRECTIVES:
             "advisory_markdown": llm_text,
             "priority_checklist": checklist,
             "is_llm_generated": is_llm_generated,
-            "guardrail_status": "Verified Grounded — Zero Hallucination Guarantee",
+            "guardrail_status": "Grounded in model output; not guaranteed error-free. Review before use.",
         }
 
     def _generate_deterministic_advisory(
@@ -558,7 +558,7 @@ Municipal authorities in {city} should enforce civic cooling and labor protectio
                 f"- Predicted Maximum Temperature (Tmax): {pred_tmax}°C (80% Confidence Interval: [{p10}°C to {p90}°C])\n"
                 f"- Expected Minimum Temperature (Tmin): {cur_tmin}°C (Diurnal Spread: ~{diurnal}°C)\n"
                 f"- Temperature Departure (ΔT): {pred_dep:+.2f}°C relative to IMD Threshold ({thr}°C)\n"
-                f"- Calibrated Heatwave Probability: {prob}%\n"
+                f"- Heatwave Probability (uncalibrated model score): {prob}%\n"
                 f"- Assessed Risk Level: {risk}\n"
                 f"- Predicted Severity Tier: {sev}\n"
                 f"- 3-Day Thermal Momentum (T3d): {t3d}°C ({trend})\n"
@@ -582,7 +582,7 @@ OTHER GUIDELINES:
 - Speak naturally, warmly, and fluently in structured paragraphs with markdown bolding and emojis for readability.
 - If asked about an unsupported location (e.g. London, Paris, Tokyo, Hyderabad), politely clarify that you cover 7 Indian metropolitan hubs (Delhi, Ahmedabad, Bengaluru, Chennai, Kolkata, Mumbai, Pune).
 - If asked about long-term horizons (e.g. 'a year from today', 'in 2030'), explain that daily deterministic forecasts operate on a 1-to-5 day window, but share 74-year seasonal expectations and decadal warming trends for that city.
-- Never output raw LaTeX delimiters like $...$. Use clean Unicode text like (Tmax − Tmin), ΔT, τ* = 0.230.
+- Never output raw LaTeX delimiters like $...$. Use clean Unicode text like (Tmax − Tmin), ΔT, τ* = 0.35.
 - Ground all temperatures and numbers strictly in the facts below:
 
 GROUNDED FACTS:
@@ -590,7 +590,7 @@ GROUNDED FACTS:
 - Total Records: 187,387 daily observations (1951–2024).
 - 2020–2024 Climate Surge: 284 heatwave days recorded across these 7 metros.
 - IMD Criteria: Plains ≥40.0°C & ΔT ≥+4.5°C; Coastal ≥37.0°C & ΔT ≥+4.5°C.
-- Model: Two-Stage Huber + Isotonic LightGBM (97.68% accuracy, τ* = 0.230, PR-AUC 0.6747).
+- Model: Two-Stage HistGradientBoosting (96.18% accuracy, 94.38% balanced accuracy, τ* = 0.35, PR-AUC 0.7294; probabilities are uncalibrated).
 
 {chr(10).join(context_lines)}"""
 
@@ -699,7 +699,7 @@ GROUNDED FACTS:
 I can chat with you naturally about:
 - **Tomorrow's Weather & Heatwave Forecasts:** Live risk assessments and probability for Delhi, Ahmedabad, Bengaluru, Chennai, Kolkata, Mumbai, or Pune.
 - **74-Year Climate Records (1951–2024):** Climatological patterns, historical extremes, and why cities like Bengaluru have recorded 0 heatwaves.
-- **IMD Criteria & ML Science:** How IMD thresholds and our Two-Stage Hybrid model (97.68% accuracy) work.
+- **IMD Criteria & ML Science:** How IMD thresholds and our Two-Stage Hybrid model (96.18% accuracy) work.
 - **Safety & Protection Protocols:** Actionable precautions for citizens, workers, and health agencies.
 
 What would you like to explore today?"""
@@ -959,11 +959,11 @@ In **HeatGuard AI**, our Two-Stage Hybrid engine continuously classifies these i
         if any(w in q for w in ["model", "hybrid", "architecture", "accuracy", "two-stage", "lightgbm", "pr-auc", "brier", "f1", "huber"]):
             text = """HeatGuard AI uses a specialized **Two-Stage Hybrid Engine** designed specifically to handle extreme rare-event forecasting (~0.96% historical heatwave frequency):
 
-1. **Stage 1 (Continuous Huber Regressor):** A LightGBM continuous model trained on 187,387 daily records to estimate exact temperature departure ΔT(t+1) and uncertainty confidence bounds [p10, p90] (achieving an R² of 0.8690 and RMSE of 1.52°C).
-2. **Stage 2 (Cost-Sensitive Rare-Event Classifier):** A cost-weighted LightGBM model calibrated with **Isotonic Probability Calibration** (`CalibratedClassifierCV`) tuned to an optimal decision threshold of **τ* = 0.230**.
+1. **Stage 1 (Temperature-Departure Regressor):** A HistGradientBoostingRegressor trained on 187,387 daily records to estimate exact temperature departure ΔT(t+1) and uncertainty confidence bounds [p10, p90] (test R² 0.8751, RMSE 1.49°C).
+2. **Stage 2 (Rare-Event Classifier):** A class-weighted HistGradientBoostingClassifier (`class_weight='balanced'`) with a decision threshold of **τ* = 0.35**. Its outputs are uncalibrated scores, not calibrated probabilities.
 
-On the 2021–2024 test benchmark, the pipeline achieves **97.68% overall accuracy**, **84.40% balanced accuracy**, and a **PR-AUC of 0.6747** (a 20.7x lift over random guessing)."""
-            return text, ["Two-Stage Hybrid Evaluation Report (data/hybrid_report.md)", "LightGBM + Scikit-Learn"]
+On the 2021–2024 test benchmark, the saved model achieves **96.18% accuracy**, **94.38% balanced accuracy**, a **PR-AUC of 0.7294** (about 22x the 3.26% heatwave base rate), **92.45% recall** and **45.79% precision** at the 0.35 threshold."""
+            return text, ["Two-Stage Hybrid Evaluation Report (data/hybrid_report.md)", "HistGradientBoosting + Scikit-Learn"]
 
         # 10. City-specific Historical Climatology Deep Dives
         if any(w in q for w in ["climatology", "74-year", "74 year", "0 heatwave", "zero heatwave", "no heatwave", "why 0", "all-time", "all time", "past records", "historical", "history"]):
@@ -1085,7 +1085,7 @@ The regular onset of the marine sea breeze around midday acts as a natural air c
 
 🛡️ **Recommended Precautions:**
 {tips}"""
-            return text, ["Two-Stage Hybrid Predictor (LightGBM)", "heatguard_clean.csv"]
+            return text, ["Two-Stage Hybrid Predictor (HistGradientBoosting)", "heatguard_clean.csv"]
 
         # 13. Weather/Forecast query but NO city specified at all
         weather_words = ["weather", "forecast", "tomorrow", "temperature", "temp", "risk", "predict", "hot", "heatwave tomorrow", "degrees"]
@@ -1114,7 +1114,7 @@ I monitor **7 major Indian metropolitan thermal clusters**:
 You can ask me about:
 - **Tomorrow's Forecasts:** Heatwave probability, maximum temperatures, and risk tiers across our 7 Indian metros.
 - **74-Year Climate Climatology:** Decadal warming trends (284 heatwaves in 2020–2024), historical extremes, and city records.
-- **Model Science:** Two-Stage Huber + Isotonic LightGBM architecture (97.68% accuracy).
+- **Model Science:** Two-Stage HistGradientBoosting architecture (96.18% accuracy).
 - **Public Safety:** Actionable advisories for citizens, outdoor workers, and health agencies.
 
 How can I assist you?"""

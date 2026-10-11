@@ -1,0 +1,5 @@
+label,concurrency,duration_s,requests,rps,mean_ms,p50_ms,p95_ms,max_ms,unexpected_responses
+baseline,5,60.6,783,12.92,385.5,92.3,2092.9,14890.0,0
+rightsized,5,60.8,622,10.24,486.8,96.3,2334.6,17541.4,0
+small,5,61.1,155,2.54,1958.8,503.6,4806.4,33831.7,0
+large,5,61.0,394,6.46,771.5,157.5,5490.1,6658.2,0

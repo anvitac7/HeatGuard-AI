@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: heatguard
+  namespace: heatguard
+  labels:
+    app: heatguard
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: heatguard
+  template:
+    metadata:
+      labels:
+        app: heatguard
+    spec:
+      containers:
+        - name: heatguard-app
+          image: anvitach7/heatguard-ai:v2
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GEMINI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gemini-api
+                  key: GEMINI_API_KEY
+                  optional: true   # app falls back to rule-based advisories if absent
+          # Baseline (deliberately generous) sizing; Exp 7 measures and right-sizes it.
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10

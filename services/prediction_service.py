@@ -157,7 +157,16 @@ class PredictionService:
         if city not in self.city_dfs:
             raise ValueError(f"Unknown city: {city}. Valid cities: {CITIES}")
 
+        from datetime import datetime as _datetime
+        try:
+            date_str = _datetime.strptime(str(date_str), "%Y-%m-%d").strftime("%Y-%m-%d")
+        except (ValueError, TypeError):
+            raise ValueError(f"Invalid date '{date_str}'. Expected format YYYY-MM-DD.")
+
         sub = self.city_dfs[city]
+        _min_d, _max_d = str(sub["date_str"].min()), str(sub["date_str"].max())
+        if date_str < _min_d or date_str > _max_d:
+            raise ValueError(f"Date {date_str} is outside the available data range {_min_d} to {_max_d} for {city}.")
         matched = sub[sub["date_str"] <= date_str]
         if len(matched) < 8:
             # Fallback to the first 8 rows if date is before dataset start

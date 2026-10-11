@@ -10,7 +10,7 @@ WORKDIR /app
 # IMPORTANT: pin scikit-learn / numpy / pandas in requirements.txt to the SAME
 # versions you trained the .pkl models with (run `pip freeze` in your venv).
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt gunicorn boto3
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 

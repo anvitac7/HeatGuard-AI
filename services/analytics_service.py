@@ -75,11 +75,11 @@ class AnalyticsService:
             "all_time_max_temp": round(all_time_high, 2),
             "all_time_max_city": str(all_time_high_row["city"]),
             "all_time_max_date": str(all_time_high_row["date"].strftime("%Y-%m-%d")),
-            "test_accuracy": 97.68,
-            "test_balanced_accuracy": 84.40,
-            "test_pr_auc": 0.6747,
-            "pr_auc_lift": "20.7x",
-            "test_roc_auc": 0.9671,
+            "test_accuracy": 96.18,
+            "test_balanced_accuracy": 94.38,
+            "test_pr_auc": 0.7294,
+            "pr_auc_lift": "22.3x",
+            "test_roc_auc": 0.9818,
         }
 
     def _compute_decadal_surge(self) -> Dict[str, Any]:
