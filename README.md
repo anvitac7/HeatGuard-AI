@@ -123,9 +123,11 @@ This is a historical-data prototype and preview environment, not a live weather 
 | `services/prediction_service.py` | Runtime feature extraction and inference from historical records. |
 | `services/analytics_service.py` | Historical climate summaries. |
 | `services/genai_service.py` | Persona advisories, optional Gemini requests, and deterministic fallback. |
+| `services/ethics_service.py` | Responsible AI backend: 7-city fairness audit, Explainable AI (XAI), and advisory safety checks. |
 | `templates/`, `static/` | Browser pages, styles, and JavaScript behavior. |
 | `test_suite.py` | Flask integration checks. |
 | `progress.md` | Implemented project status and known scope limits. |
+| `HeatGuardAI_Ethics.md` | Responsible AI specification, fairness metrics, and safety audit protocol. |
 | `HeatGuard_AI_Implementation_Plan_Dataset_Specific.md` | Implementation-focused architecture and data notes. |
 | `data/hybrid_report.md` | Recomputed results for the currently saved model. |
 
