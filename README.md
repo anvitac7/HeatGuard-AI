@@ -92,13 +92,20 @@ python test_suite.py
 
 The suite was run on 9 October 2026 and its Flask page/API assertions passed. The test run exercised the deterministic GenAI fallback after external Gemini requests failed. A later end-to-end `/api/advisory` request verified successful Gemini generation using `gemini-3.8-flash`. Provider availability and quota can still affect later requests; the app falls back when a request fails. A passing endpoint/integration test does not validate operational forecast quality.
 
-## Deployment and hosting
+## Running locally
 
-HeatGuard AI is designed to run both locally and as a lightweight serverless deployment:
+HeatGuard AI runs locally as a Flask application:
 
-- Local development: run the Flask app directly with `python app.py`, then open `http://127.0.0.1:5000/`.
-- Serverless hosting: the project includes `api/index.py` and `vercel.json`, which expose the same Flask app through a Vercel rewrite and keep the project root on the Python import path.
-- Static assets: browser UI assets are served from `static/`, with `public/` kept as an additional fallback for deployment scenarios.
+1. Create and activate a Python virtual environment (recommended Python 3.11 or 3.12).
+2. Install requirements:
+   ```bash
+   pip install -r requirements.txt
+   ```
+3. Run the application:
+   ```bash
+   python app.py
+   ```
+4. Open `http://127.0.0.1:5000/` in your browser.
 
 This is a historical-data prototype and preview environment, not a live weather service or public alert system.
 
@@ -107,8 +114,6 @@ This is a historical-data prototype and preview environment, not a live weather 
 | Path | Purpose |
 |---|---|
 | `app.py` | Flask pages and JSON endpoints. |
-| `api/index.py` | Vercel serverless entrypoint that loads the Flask app. |
-| `vercel.json` | Vercel rewrite and runtime configuration for the app. |
 | `data/heatguard_raw.csv`, `data/heatguard_clean.csv` | Source and cleaned weather records present in this checkout. |
 | `data_cleaning/Data_cleaner.py` | Cleaning and calendar-segmentation pipeline. |
 | `data_cleaning/feature_eng.py` | 45-feature and next-day-target pipeline. |
@@ -118,7 +123,7 @@ This is a historical-data prototype and preview environment, not a live weather 
 | `services/prediction_service.py` | Runtime feature extraction and inference from historical records. |
 | `services/analytics_service.py` | Historical climate summaries. |
 | `services/genai_service.py` | Persona advisories, optional Gemini requests, and deterministic fallback. |
-| `templates/`, `static/`, `public/` | Browser pages, styles, JavaScript behavior, and deployment assets. |
+| `templates/`, `static/` | Browser pages, styles, and JavaScript behavior. |
 | `test_suite.py` | Flask integration checks. |
 | `progress.md` | Implemented project status and known scope limits. |
 | `HeatGuard_AI_Implementation_Plan_Dataset_Specific.md` | Implementation-focused architecture and data notes. |
