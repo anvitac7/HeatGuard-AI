@@ -2005,3 +2005,196 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* ==========================================================================
+   Responsible AI & Ethics Hub Styles
+   ========================================================================== */
+.ethics-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 0.5rem;
+  overflow-x: auto;
+}
+
+.ethics-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.15rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.ethics-tab:hover {
+  color: var(--text-primary);
+  background: var(--bg-surface-hover);
+}
+
+.ethics-tab.active {
+  color: var(--brand-700);
+  background: var(--brand-50);
+  border-color: var(--brand-200);
+}
+
+[data-theme="dark"] .ethics-tab.active {
+  color: var(--brand-500);
+  background: var(--brand-50);
+  border-color: var(--brand-500);
+}
+
+.tab-pane {
+  display: none;
+}
+
+.tab-pane.active {
+  display: block;
+}
+
+/* Confusion Matrix 2x2 Grid */
+.confusion-matrix-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.matrix-cell {
+  padding: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.matrix-cell.cell-tp {
+  background: var(--risk-normal-bg);
+  border-color: var(--risk-normal-border);
+}
+
+.matrix-cell.cell-tn {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+}
+
+.matrix-cell.cell-fp {
+  background: var(--risk-moderate-bg);
+  border-color: var(--risk-moderate-border);
+}
+
+.matrix-cell.cell-fn {
+  background: var(--risk-severe-bg);
+  border-color: var(--risk-severe-border);
+}
+
+.matrix-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.matrix-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.matrix-desc {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+/* Factor Item Styles */
+.factor-card {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  margin-bottom: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  transition: border-color var(--transition-fast);
+}
+
+.factor-card:hover {
+  border-color: var(--brand-500);
+}
+
+.factor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.factor-name {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.factor-value-tag {
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+}
+
+.factor-explanation {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+/* Check Status Items in Safety Audit */
+.audit-check-item {
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  margin-bottom: 0.65rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.audit-check-title {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.audit-check-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.audit-check-detail {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  font-style: italic;
+}
+

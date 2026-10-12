@@ -1,0 +1,631 @@
+{% extends "base.html" %}
+
+{% block title %}HeatGuard AI — Responsible AI & Algorithmic Governance{% endblock %}
+
+{% block content %}
+<!-- Executive Responsible AI Header -->
+<div class="glass-card" style="margin-bottom: 1.25rem;">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:0.35rem;">
+        <span class="badge badge-normal" style="font-size:0.75rem; padding:0.25rem 0.6rem;">
+          <i data-feather="shield" style="width:12px;height:12px;"></i> Algorithmic Governance Hub
+        </span>
+        <span class="badge" style="background:var(--bg-muted); color:var(--text-secondary); font-size:0.75rem; padding:0.25rem 0.6rem;">
+          IMD Grounded • Zero-Fabrication
+        </span>
+      </div>
+      <h1 style="font-size: 1.45rem; font-weight: 800; letter-spacing: -0.01em; margin-bottom: 0.35rem; color: var(--text-primary);">
+        Responsible AI & Algorithmic Governance
+      </h1>
+      <p style="color: var(--text-secondary); font-size: 0.88rem; max-width: 880px; line-height: 1.5;">
+        Continuous, empirical auditing across the three core pillars of responsible climate computing: 
+        <strong>Fairness & Geographic Bias</strong>, <strong>Explainable AI (XAI)</strong>, and <strong>GenAI Safety & Advisory Guardrails</strong>. 
+        Grounded in 8,120 held-out test evaluations (2021–2024) across 7 Indian metropolitan hubs.
+      </p>
+    </div>
+    <div style="display:flex; gap:0.75rem; align-items:center;">
+      <span class="badge badge-normal" style="font-size:0.82rem; padding:0.45rem 0.85rem;">
+        <i data-feather="check-circle" style="width:14px;height:14px;"></i> System Audit Status: Grounded & Transparent
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- System Audit KPI Row -->
+<div class="kpi-grid" style="margin-bottom: 1.25rem;">
+  <div class="kpi-card">
+    <div class="kpi-label">
+      <span>Held-Out Test Partition</span>
+      <i data-feather="database" style="color:var(--brand-600); width:16px;height:16px;"></i>
+    </div>
+    <div class="kpi-value-row">
+      <span class="kpi-value">{{ fairness.disparity_summary.total_test_days | default(8120) }}</span>
+      <span class="kpi-unit">Days</span>
+    </div>
+    <div class="kpi-subtext">
+      <span>Period: <strong>{{ fairness.disparity_summary.test_period | default('2021–2024') }}</strong></span>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-label">
+      <span>Global Model Sensitivity</span>
+      <i data-feather="activity" style="color:var(--risk-normal); width:16px;height:16px;"></i>
+    </div>
+    <div class="kpi-value-row">
+      <span class="kpi-value">{{ fairness.disparity_summary.global_recall_pct }}%</span>
+      <span class="kpi-unit">Recall</span>
+      <span class="badge badge-normal" style="margin-left:auto;">202/220 Events</span>
+    </div>
+    <div class="kpi-subtext">
+      <span>Global Accuracy: <strong>{{ fairness.disparity_summary.global_accuracy_pct }}%</strong></span>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-label">
+      <span>Geographic Metros Monitored</span>
+      <i data-feather="map-pin" style="color:var(--brand-700); width:16px;height:16px;"></i>
+    </div>
+    <div class="kpi-value-row">
+      <span class="kpi-value">{{ fairness.disparity_summary.cities_evaluated }}</span>
+      <span class="kpi-unit">Metros</span>
+      <span class="badge" style="background:var(--brand-50); color:var(--brand-700); margin-left:auto; font-size:0.75rem;">Disaggregated</span>
+    </div>
+    <div class="kpi-subtext">
+      <span>Max: <strong>{{ fairness.disparity_summary.max_recall_city }}</strong></span>
+    </div>
+  </div>
+
+  <div class="kpi-card">
+    <div class="kpi-label">
+      <span>GenAI Safety Guardrails</span>
+      <i data-feather="lock" style="color:var(--brand-600); width:16px;height:16px;"></i>
+    </div>
+    <div class="kpi-value-row">
+      <span class="kpi-value" style="font-size:1.4rem;">Enforced</span>
+      <span class="badge badge-normal" style="margin-left:auto;">Zero PII</span>
+    </div>
+    <div class="kpi-subtext">
+      <span>Failover: <strong>Deterministic HAP</strong></span>
+    </div>
+  </div>
+</div>
+
+<!-- Three-Pillar Navigation Tabs -->
+<div class="ethics-tabs" id="ethics-tabs">
+  <button class="ethics-tab active" data-tab="fairness">
+    <i data-feather="check-circle" style="width:16px;height:16px;"></i>
+    <span>Pillar 1: Fairness & Geographic Bias</span>
+  </button>
+  <button class="ethics-tab" data-tab="xai">
+    <i data-feather="cpu" style="width:16px;height:16px;"></i>
+    <span>Pillar 2: Explainable AI (XAI)</span>
+  </button>
+  <button class="ethics-tab" data-tab="safety">
+    <i data-feather="shield" style="width:16px;height:16px;"></i>
+    <span>Pillar 3: GenAI Safety & Guardrails</span>
+  </button>
+</div>
+
+<!-- ==================================================================================== -->
+<!-- TAB 1: FAIRNESS & GEOGRAPHIC BIAS AUDIT -->
+<!-- ==================================================================================== -->
+<div class="tab-pane active" id="pane-fairness">
+  <!-- Section 1.1: 7-City Disaggregated Evaluation Table -->
+  <section class="glass-card" style="margin-bottom: 1.25rem;">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">
+          <i data-feather="bar-chart-2"></i>
+          <span>Disaggregated 7-City Held-Out Test Evaluation (2021–2024)</span>
+        </h2>
+        <div class="card-subtitle">
+          Real confusion matrix metrics and sensitivity rates evaluated on 8,120 out-of-sample days across 7 Indian metros
+        </div>
+      </div>
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <span class="badge" style="background:var(--bg-muted); color:var(--text-secondary); font-size:0.75rem;">
+          Decision Threshold: τ = {{ fairness.disparity_summary.decision_threshold }}
+        </span>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="custom-table" id="fairness-table">
+        <thead>
+          <tr>
+            <th>City</th>
+            <th>Test Days</th>
+            <th>Observed HW Days</th>
+            <th>Base Prevalence</th>
+            <th>TP</th>
+            <th>FP</th>
+            <th>FN</th>
+            <th>TN</th>
+            <th>Recall (Sensitivity)</th>
+            <th>Precision</th>
+            <th>False Alarm Rate</th>
+            <th>Bias Classification Tier</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in fairness.city_table %}
+          <tr>
+            <td><strong>{{ row.city }}</strong></td>
+            <td>{{ row.total_samples }}</td>
+            <td><span class="badge {% if row.heatwave_positives > 0 %}badge-severe{% else %}badge-normal{% endif %}">{{ row.heatwave_positives }}</span></td>
+            <td>{{ row.positive_rate_pct }}%</td>
+            <td style="color:var(--risk-normal); font-weight:700;">{{ row.true_positives }}</td>
+            <td style="color:var(--risk-warning);">{{ row.false_positives }}</td>
+            <td style="color:var(--risk-severe); font-weight:700;">{{ row.false_negatives }}</td>
+            <td>{{ row.true_negatives }}</td>
+            <td>
+              {% if row.recall_pct is not none %}
+                <strong>{{ row.recall_pct }}%</strong>
+              {% else %}
+                <span style="color:var(--text-muted);">N/A (0 events)</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if row.precision_pct is not none %}
+                {{ row.precision_pct }}%
+              {% else %}
+                <span style="color:var(--text-muted);">N/A</span>
+              {% endif %}
+            </td>
+            <td>{{ row.false_alarm_rate_pct }}%</td>
+            <td>
+              {% if row.status_color == 'success' %}
+                <span class="badge badge-normal">{{ row.bias_tier }}</span>
+              {% elif row.status_color == 'info' %}
+                <span class="badge" style="background:var(--brand-50); color:var(--brand-700);">{{ row.bias_tier }}</span>
+              {% elif row.status_color == 'warning' %}
+                <span class="badge badge-warning">{{ row.bias_tier }}</span>
+              {% else %}
+                <span class="badge" style="background:var(--bg-muted); color:var(--text-muted);">{{ row.bias_tier }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Section 1.2: Interactive Single-City Deep Dive Inspector -->
+  <section class="glass-card" style="margin-bottom: 1.25rem;">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">
+          <i data-feather="search"></i>
+          <span>Interactive City Deep-Dive Inspector</span>
+        </h2>
+        <div class="card-subtitle">
+          Examine the disaggregated 2x2 confusion matrix and localized ethical insight for any individual metro
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <label for="deep-dive-city-select" style="font-size:0.82rem; font-weight:600; color:var(--text-secondary);">Select City:</label>
+        <select id="deep-dive-city-select" class="select-input" style="padding:0.35rem 0.75rem; font-size:0.85rem;">
+          {% for c in cities %}
+          <option value="{{ c.city }}" {% if c.city == 'Delhi' %}selected{% endif %}>{{ c.city }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1.1fr 1fr; gap:1.25rem; align-items:start;">
+      <!-- Left: 2x2 Confusion Matrix Visual Card -->
+      <div style="padding:1rem; background:var(--bg-subtle); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+          <h3 style="font-size:0.92rem; font-weight:700; color:var(--text-primary); margin:0;">
+            <span id="dd-city-name">Delhi</span> — Held-Out Confusion Matrix
+          </h3>
+          <span class="badge" id="dd-status-badge" style="font-size:0.75rem;">Loading...</span>
+        </div>
+        <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.75rem;">
+          Evaluated against official IMD heatwave definitions across 2021–2024 test days.
+        </p>
+
+        <div class="confusion-matrix-grid">
+          <div class="matrix-cell cell-tp">
+            <span class="matrix-label">True Positives (TP)</span>
+            <span class="matrix-value" id="dd-tp" style="color:var(--risk-normal);">--</span>
+            <span class="matrix-desc">Predicted Heatwave & Actual Heatwave</span>
+          </div>
+          <div class="matrix-cell cell-fp">
+            <span class="matrix-label">False Positives (FP)</span>
+            <span class="matrix-value" id="dd-fp" style="color:var(--risk-warning);">--</span>
+            <span class="matrix-desc">Predicted Heatwave & Actual Normal (False Alarm)</span>
+          </div>
+          <div class="matrix-cell cell-fn">
+            <span class="matrix-label">False Negatives (FN)</span>
+            <span class="matrix-value" id="dd-fn" style="color:var(--risk-severe);">--</span>
+            <span class="matrix-desc">Predicted Normal & Actual Heatwave (Missed Event)</span>
+          </div>
+          <div class="matrix-cell cell-tn">
+            <span class="matrix-label">True Negatives (TN)</span>
+            <span class="matrix-value" id="dd-tn">--</span>
+            <span class="matrix-desc">Predicted Normal & Actual Normal</span>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:0.5rem; margin-top:0.85rem; padding-top:0.85rem; border-top:1px solid var(--border-subtle); font-size:0.78rem; text-align:center;">
+          <div>
+            <div style="color:var(--text-muted); font-weight:600;">Recall</div>
+            <div style="font-size:1rem; font-weight:800; color:var(--text-primary);" id="dd-recall">--%</div>
+          </div>
+          <div>
+            <div style="color:var(--text-muted); font-weight:600;">Precision</div>
+            <div style="font-size:1rem; font-weight:800; color:var(--text-primary);" id="dd-precision">--%</div>
+          </div>
+          <div>
+            <div style="color:var(--text-muted); font-weight:600;">Specificity</div>
+            <div style="font-size:1rem; font-weight:800; color:var(--text-primary);" id="dd-specificity">--%</div>
+          </div>
+          <div>
+            <div style="color:var(--text-muted); font-weight:600;">False Alarm Rate</div>
+            <div style="font-size:1rem; font-weight:800; color:var(--text-primary);" id="dd-far">--%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Local Climatological Ethical Narrative -->
+      <div style="display:flex; flex-direction:column; gap:0.75rem;">
+        <div class="info-callout" style="border-left-color: var(--brand-600); margin:0;">
+          <h4 style="font-size:0.88rem; font-weight:700; color:var(--brand-700); margin-bottom:0.35rem; display:flex; align-items:center; gap:0.4rem;">
+            <i data-feather="book-open" style="width:15px;height:15px;"></i>
+            <span>Local Climatological Ethics & Bias Analysis</span>
+          </h4>
+          <p id="dd-insight" style="font-size:0.83rem; color:var(--text-secondary); line-height:1.5; margin:0;">
+            Loading ethical insight...
+          </p>
+        </div>
+
+        <div style="padding:1rem; background:var(--bg-surface); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+          <h4 style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">
+            Regional Mitigation Protocol
+          </h4>
+          <p style="font-size:0.8rem; color:var(--text-secondary); line-height:1.45; margin:0;">
+            HeatGuard AI tunes operational sensitivity to ensure missed heatwaves (False Negatives) are minimized in vulnerable populations, 
+            accepting a controlled false alarm rate to protect outdoor laborers and urban residents.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 1.3: Data Representation & Sensor Audit Card -->
+  <section class="glass-card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">
+          <i data-feather="database"></i>
+          <span>Data Representation & Observation Integrity Audit</span>
+        </h2>
+        <div class="card-subtitle">
+          Uniform 74-year daily meteorological records across 7 Indian metropolitan hubs (187,022 total observations)
+        </div>
+      </div>
+      <span class="badge badge-normal" style="font-size:0.78rem;">
+        <i data-feather="check" style="width:12px;height:12px;"></i> 100% Observation Completeness
+      </span>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin-top:0.5rem;">
+      <div style="padding:0.85rem 1rem; background:var(--bg-subtle); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+        <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.25rem;">Observation Integrity</div>
+        <div style="font-size:1.1rem; font-weight:800; color:var(--text-primary); margin-bottom:0.25rem;">187,022 Days (1951–2024)</div>
+        <div style="font-size:0.78rem; color:var(--text-secondary);">Continuous daily ground-truth measurements with verified IMD climatological normals.</div>
+      </div>
+
+      <div style="padding:0.85rem 1rem; background:var(--bg-subtle); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+        <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.25rem;">Zero Demographic Speculation</div>
+        <div style="font-size:1.1rem; font-weight:800; color:var(--text-primary); margin-bottom:0.25rem;">Physical Variables Only</div>
+        <div style="font-size:0.78rem; color:var(--text-secondary);">Model inputs are strictly physical atmospheric measurements. No demographic or socioeconomic proxies are used.</div>
+      </div>
+
+      <div style="padding:0.85rem 1rem; background:var(--bg-subtle); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+        <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:0.25rem;">Transparent Disparities</div>
+        <div style="font-size:1.1rem; font-weight:800; color:var(--text-primary); margin-bottom:0.25rem;">Explicitly Disclosed</div>
+        <div style="font-size:0.78rem; color:var(--text-secondary);">Regional climate variances (e.g. coastal humidity vs. inland desert plains) are tracked without artificial smoothing.</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ==================================================================================== -->
+<!-- TAB 2: EXPLAINABLE AI (XAI) -->
+<!-- ==================================================================================== -->
+<div class="tab-pane" id="pane-xai">
+  <!-- Section 2.1: Global Feature Importance Chart & Table -->
+  <section class="glass-card" style="margin-bottom: 1.25rem;">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">
+          <i data-feather="cpu"></i>
+          <span>Global Feature Importance Ranking (Two-Stage Model)</span>
+        </h2>
+        <div class="card-subtitle">
+          Decomposes which atmospheric variables drive the gradient boosting classification and regression stages
+        </div>
+      </div>
+      <span class="badge" style="background:var(--brand-50); color:var(--brand-700); font-size:0.78rem;">
+        Top 10 Physical Drivers
+      </span>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:1.25rem; align-items:start;">
+      <!-- Chart.js Canvas Container -->
+      <div style="padding:1rem; background:var(--bg-subtle); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+        <div style="height: 340px; position:relative;">
+          <canvas id="global-importance-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- Feature Roles Summary List -->
+      <div style="display:flex; flex-direction:column; gap:0.5rem; max-height:360px; overflow-y:auto; padding-right:0.25rem;" id="feature-role-list">
+        <div style="text-align:center; padding:2rem; color:var(--text-muted);">
+          Loading global feature importance ranking...
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2.2: Interactive Local Prediction Factor Inspector -->
+  <section class="glass-card" style="margin-bottom: 1.25rem;">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">
+          <i data-feather="sliders"></i>
+          <span>Interactive Local Prediction Inspector</span>
+        </h2>
+        <div class="card-subtitle">
+          Decompose any specific day's forecast into its 5 primary contributing factors with calibrated probabilities
+        </div>
+      </div>
+    </div>
+
+    <!-- Inspector Toolbar -->
+    <div class="control-bar" style="margin-bottom:1.25rem; background:var(--bg-subtle);">
+      <div class="control-group">
+        <div class="control-item">
+          <label class="control-label" for="xai-city-select">
+            <i data-feather="map-pin" style="width:14px;height:14px;color:var(--brand-600);"></i>
+            <span>Metro:</span>
+          </label>
+          <select id="xai-city-select" class="select-input">
+            {% for c in cities %}
+            <option value="{{ c.city }}" {% if c.city == 'Delhi' %}selected{% endif %}>{{ c.city }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="control-item">
+          <label class="control-label" for="xai-date-select">
+            <i data-feather="calendar" style="width:14px;height:14px;color:var(--brand-600);"></i>
+            <span>Observation Date:</span>
+          </label>
+          <input type="date" id="xai-date-select" class="date-input" value="2024-05-28" min="1951-01-08" max="2024-06-21">
+        </div>
+
+        <button id="inspect-xai-btn" class="btn btn-primary">
+          <i data-feather="zap" style="width:15px;height:15px;"></i>
+          <span>Inspect Factor Drivers</span>
+        </button>
+      </div>
+
+      <div class="control-group">
+        <div class="control-item">
+          <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Historical Presets:</span>
+          <button class="preset-chip" data-xai-city="Delhi" data-xai-date="2024-05-28">Delhi 44.3°C (2024)</button>
+          <button class="preset-chip" data-xai-city="Ahmedabad" data-xai-date="2024-05-23">Ahmedabad 46.6°C (2024)</button>
+          <button class="preset-chip" data-xai-city="Bengaluru" data-xai-date="2024-05-15">Bengaluru 36.0°C (Normal)</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inspector Output Banner & Factor Cards -->
+    <div id="xai-inspector-container">
+      <!-- Grounding Context Banner -->
+      <div style="display:flex; flex-wrap:wrap; gap:0.75rem; align-items:center; margin-bottom:1.25rem; padding:0.85rem 1.15rem; background:var(--bg-subtle); border-radius:var(--radius-md); border:1px solid var(--border-subtle); font-size:0.85rem;">
+        <span style="color:var(--text-muted); font-weight:700;">Forecast Target:</span>
+        <span>City: <strong id="xai-ctx-city" style="color:var(--text-primary);">Delhi</strong></span>
+        <span>•</span>
+        <span>Target Date: <strong id="xai-ctx-date" style="color:var(--text-primary);">2024-05-29</strong></span>
+        <span>•</span>
+        <span>Predicted Max: <strong id="xai-ctx-temp" style="color:var(--brand-800);">--.-°C</strong></span>
+        <span>•</span>
+        <span>Departure: <strong id="xai-ctx-dep">--.-°C</strong></span>
+        <span>•</span>
+        <span>Calibrated Probability: <strong id="xai-ctx-prob" style="color:var(--risk-warning);">--.-%</strong></span>
+        <span>•</span>
+        <span>Risk Tier: <span id="xai-ctx-badge" class="badge badge-warning">HIGH</span></span>
+      </div>
+
+      <!-- Plain Language Synthesis Card -->
+      <div class="info-callout" style="border-left-color: var(--brand-600); margin-bottom:1.25rem;">
+        <h4 style="font-size:0.88rem; font-weight:700; color:var(--brand-700); margin-bottom:0.35rem; display:flex; align-items:center; gap:0.4rem;">
+          <i data-feather="message-circle" style="width:15px;height:15px;"></i>
+          <span>Plain-Language Forecast Synthesis</span>
+        </h4>
+        <p id="xai-synthesis-text" style="font-size:0.84rem; color:var(--text-secondary); line-height:1.5; margin:0;">
+          Loading local explanation...
+        </p>
+      </div>
+
+      <!-- Top 5 Local Driving Factors -->
+      <h3 style="font-size:0.95rem; font-weight:700; color:var(--text-primary); margin-bottom:0.65rem;">
+        Top Contributing Driving Factors for this Prediction
+      </h3>
+      <div id="xai-factors-list">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 2.3: Causality Disclaimer -->
+  <div class="glass-card" style="border-left: 4px solid var(--risk-moderate);">
+    <div style="display:flex; align-items:flex-start; gap:0.75rem;">
+      <i data-feather="alert-triangle" style="color:var(--risk-moderate); width:20px;height:20px; flex-shrink:0; margin-top:2px;"></i>
+      <div>
+        <h4 style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:0.25rem;">
+          Statistical Association vs. Meteorological Causality Disclaimer
+        </h4>
+        <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.5; margin:0;">
+          Feature importance scores and factor breakdowns explain the statistical patterns learned by HeatGuard AI's machine learning estimators. 
+          They illustrate why the model computed a specific probability score from historical training observations; 
+          they do <strong>not</strong> constitute physical atmospheric causality or deterministic meteorological proof.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================================================================================== -->
+<!-- TAB 3: GENAI SAFETY & ADVISORY AUDIT -->
+<!-- ==================================================================================== -->
+<div class="tab-pane" id="pane-safety">
+  <!-- Section 3.1: Active Safety Posture & Guardrails -->
+  <section class="glass-card" style="margin-bottom: 1.25rem;">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">
+          <i data-feather="shield"></i>
+          <span>GenAI Safety Posture & Architectural Guardrails</span>
+        </h2>
+        <div class="card-subtitle">
+          Ensures multi-stakeholder advisories strictly reflect verified numerical forecasts with zero fabricated orders or PII
+        </div>
+      </div>
+      <span class="badge badge-normal" style="font-size:0.8rem;">
+        <i data-feather="lock" style="width:13px;height:13px;"></i> {{ safety.genai_safety_status | default('ACTIVE_GUARDRAILS') }}
+      </span>
+    </div>
+
+    <!-- 4 Enforced Safety Policies -->
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:1rem; margin-top:0.5rem;">
+      {% for pol in safety.safety_policies %}
+      <div style="padding:1rem; background:var(--bg-subtle); border-radius:var(--radius-md); border:1px solid var(--border-subtle); display:flex; flex-direction:column; gap:0.35rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <strong style="font-size:0.88rem; color:var(--text-primary);">{{ pol.policy }}</strong>
+          <span class="badge badge-normal" style="font-size:0.7rem;">{{ pol.status }}</span>
+        </div>
+        <p style="font-size:0.8rem; color:var(--text-secondary); line-height:1.45; margin:0;">
+          {{ pol.description }}
+        </p>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Fallback Architecture Banner -->
+    <div style="margin-top:1.25rem; padding:0.85rem 1.15rem; background:var(--bg-surface); border-radius:var(--radius-md); border:1px solid var(--border-subtle); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem;">
+      <div>
+        <div style="font-size:0.75rem; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Deterministic Failover Engine</div>
+        <div style="font-size:0.92rem; font-weight:700; color:var(--text-primary);">{{ safety.fallback_architecture }}</div>
+      </div>
+      <span class="badge" style="background:var(--brand-50); color:var(--brand-700); font-size:0.78rem;">
+        <i data-feather="refresh-cw" style="width:12px;height:12px;"></i> {{ safety.fallback_status }}
+      </span>
+    </div>
+  </section>
+
+  <!-- Section 3.2: Live Interactive Advisory Safety Compliance Tester -->
+  <section class="glass-card" style="margin-bottom: 1.25rem;">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">
+          <i data-feather="check-square"></i>
+          <span>Automated 5-Point Advisory Compliance Tester</span>
+        </h2>
+        <div class="card-subtitle">
+          Test any advisory narrative in real time against the 5 responsible AI automated safety checks
+        </div>
+      </div>
+      <button id="load-sample-adv-btn" class="btn btn-outline" style="font-size:0.78rem; padding:0.35rem 0.75rem;">
+        <i data-feather="copy" style="width:13px;height:13px;"></i> Load Sample Advisory
+      </button>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1.2fr 1fr; gap:1.25rem; align-items:start;">
+      <!-- Left: Form to Test Advisory -->
+      <div style="padding:1rem; background:var(--bg-subtle); border-radius:var(--radius-md); border:1px solid var(--border-subtle);">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem; margin-bottom:0.75rem;">
+          <div>
+            <label style="font-size:0.78rem; font-weight:600; color:var(--text-muted); display:block; margin-bottom:0.25rem;">Target City</label>
+            <select id="audit-city-select" class="select-input" style="width:100%;">
+              {% for c in cities %}
+              <option value="{{ c.city }}" {% if c.city == 'Delhi' %}selected{% endif %}>{{ c.city }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label style="font-size:0.78rem; font-weight:600; color:var(--text-muted); display:block; margin-bottom:0.25rem;">Predicted Risk Tier</label>
+            <select id="audit-risk-select" class="select-input" style="width:100%;">
+              <option value="NORMAL">NORMAL (Low Risk)</option>
+              <option value="MODERATE">MODERATE</option>
+              <option value="WARNING">WARNING</option>
+              <option value="HIGH" selected>HIGH (Severe)</option>
+              <option value="EXTREME">EXTREME (Emergency)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-bottom:0.75rem;">
+          <label style="font-size:0.78rem; font-weight:600; color:var(--text-muted); display:block; margin-bottom:0.25rem;">Stakeholder Persona</label>
+          <select id="audit-persona-select" class="select-input" style="width:100%;">
+            <option value="Citizen" selected>Citizen & Public</option>
+            <option value="Farmer">Farmer & Agriculture</option>
+            <option value="Health Agency">Health Agency & Hospitals</option>
+            <option value="Municipal Authority">Municipal Disaster Cell</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom:0.85rem;">
+          <label style="font-size:0.78rem; font-weight:600; color:var(--text-muted); display:block; margin-bottom:0.25rem;">Advisory Text Content</label>
+          <textarea id="audit-text-input" rows="6" class="select-input" style="width:100%; resize:vertical; font-family:var(--font-sans); font-size:0.84rem; line-height:1.45;" placeholder="Enter or paste operational heat advisory text to audit against safety guardrails...">HeatGuard AI Operational Advisory for Delhi: Severe heat conditions predicted tomorrow with peak temperature of 44.7°C. Stay indoors during peak afternoon hours (12 PM to 4 PM), maintain regular hydration with oral rehydration solutions, and avoid direct sun exposure. Municipal cooling shelters are active. Consult local health facilities if heat exhaustion symptoms arise.</textarea>
+        </div>
+
+        <button id="run-audit-btn" class="btn btn-primary" style="width:100%;">
+          <i data-feather="shield" style="width:15px;height:15px;"></i>
+          <span>Run Safety Compliance Audit</span>
+        </button>
+      </div>
+
+      <!-- Right: Real-Time Audit Results -->
+      <div style="padding:1rem; background:var(--bg-surface); border-radius:var(--radius-md); border:1px solid var(--border-subtle);" id="audit-results-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+          <h3 style="font-size:0.95rem; font-weight:700; color:var(--text-primary); margin:0;">
+            Safety Compliance Audit Score
+          </h3>
+          <span class="badge badge-normal" id="audit-status-badge" style="font-size:0.8rem;">VERIFIED_SAFE</span>
+        </div>
+        <div style="display:flex; align-items:baseline; gap:0.5rem; margin-bottom:0.75rem;">
+          <span style="font-size:1.8rem; font-weight:800; color:var(--text-primary);" id="audit-score-num">100%</span>
+          <span style="font-size:0.8rem; color:var(--text-muted);">Guardrails Passed</span>
+        </div>
+
+        <div id="audit-checks-container">
+          <!-- Check items rendered dynamically -->
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section 3.3: Legal Policy Disclosures -->
+  <div class="glass-card" style="border-left: 4px solid var(--brand-600);">
+    <h4 style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:0.35rem;">
+      Statutory Policy Disclosure & Advisory Scope
+    </h4>
+    <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.5; margin:0;">
+      {{ safety.transparency_disclosure }}
+    </p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/ethics.js') }}?v=1.0"></script>
+{% endblock %}

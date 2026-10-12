@@ -14,7 +14,7 @@ def run_tests():
     client = app.test_client()
 
     # 1. HTML Pages
-    html_routes = ["/", "/dashboard", "/analytics", "/advisory", "/chatbot"]
+    html_routes = ["/", "/dashboard", "/analytics", "/advisory", "/chatbot", "/ethics"]
     for route in html_routes:
         res = client.get(route)
         assert res.status_code == 200, f"Route {route} failed with {res.status_code}"
