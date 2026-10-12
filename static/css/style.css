@@ -2198,3 +2198,54 @@ body {
   font-style: italic;
 }
 
+/* Compact Ethics Fairness Table (Fits screen without horizontal scroll) */
+.ethics-fairness-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.ethics-fairness-table th {
+  background-color: var(--bg-muted);
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  padding: 0.5rem 0.3rem;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ethics-fairness-table td {
+  padding: 0.5rem 0.3rem;
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ethics-fairness-table tbody tr:hover {
+  background-color: var(--bg-subtle);
+}
+
+.ethics-fairness-table .col-center {
+  text-align: center;
+}
+
+.ethics-fairness-table .badge-compact {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.7rem;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: inline-block;
+  max-width: 100%;
+}
+

@@ -132,59 +132,74 @@
       </div>
     </div>
 
-    <div class="table-responsive">
-      <table class="custom-table" id="fairness-table">
+    <div style="width: 100%; overflow-x: hidden;">
+      <table class="ethics-fairness-table" id="fairness-table">
+        <colgroup>
+          <col style="width: 13%;">
+          <col style="width: 7%;">
+          <col style="width: 7.5%;">
+          <col style="width: 7.5%;">
+          <col style="width: 5%;">
+          <col style="width: 5%;">
+          <col style="width: 5%;">
+          <col style="width: 6.5%;">
+          <col style="width: 8.5%;">
+          <col style="width: 8%;">
+          <col style="width: 7%;">
+          <col style="width: 20%;">
+        </colgroup>
         <thead>
           <tr>
             <th>City</th>
-            <th>Test Days</th>
-            <th>Observed HW Days</th>
-            <th>Base Prevalence</th>
-            <th>TP</th>
-            <th>FP</th>
-            <th>FN</th>
-            <th>TN</th>
-            <th>Recall (Sensitivity)</th>
-            <th>Precision</th>
-            <th>False Alarm Rate</th>
-            <th>Bias Classification Tier</th>
+            <th class="col-center" title="Total Out-of-Sample Test Days (2021–2024)">Days</th>
+            <th class="col-center" title="Observed Historical Heatwave Days">HW Days</th>
+            <th class="col-center" title="Base Heatwave Prevalence Rate">Prevalence</th>
+            <th class="col-center" title="True Positives">TP</th>
+            <th class="col-center" title="False Positives (False Alarms)">FP</th>
+            <th class="col-center" title="False Negatives (Missed Events)">FN</th>
+            <th class="col-center" title="True Negatives">TN</th>
+            <th class="col-center" title="Model Sensitivity / Recall">Recall</th>
+            <th class="col-center" title="Positive Predictive Value">Precision</th>
+            <th class="col-center" title="False Alarm Rate">FAR</th>
+            <th class="col-center" title="Algorithmic Bias Classification Tier">Bias Tier</th>
           </tr>
         </thead>
         <tbody>
           {% for row in fairness.city_table %}
+          {% set short_tier = row.bias_tier | replace("Climatological Safe Haven (Zero HW in test period)", "Safe Haven (0 HW)") | replace("Data Scarcity Alert (<5 events)", "Data Scarcity (<5)") | replace("High Sensitivity (Moderate False Alarm Bias)", "High Recall (FA Bias)") | replace("High Sensitivity & High Reliability", "High Sensitivity") | replace("Regional Sensitivity Variance", "Regional Variance") %}
           <tr>
             <td><strong>{{ row.city }}</strong></td>
-            <td>{{ row.total_samples }}</td>
-            <td><span class="badge {% if row.heatwave_positives > 0 %}badge-severe{% else %}badge-normal{% endif %}">{{ row.heatwave_positives }}</span></td>
-            <td>{{ row.positive_rate_pct }}%</td>
-            <td style="color:var(--risk-normal); font-weight:700;">{{ row.true_positives }}</td>
-            <td style="color:var(--risk-warning);">{{ row.false_positives }}</td>
-            <td style="color:var(--risk-severe); font-weight:700;">{{ row.false_negatives }}</td>
-            <td>{{ row.true_negatives }}</td>
-            <td>
+            <td class="col-center">{{ row.total_samples }}</td>
+            <td class="col-center"><span class="badge {% if row.heatwave_positives > 0 %}badge-severe{% else %}badge-normal{% endif %}" style="padding:0.12rem 0.35rem; font-size:0.68rem;">{{ row.heatwave_positives }}</span></td>
+            <td class="col-center">{{ row.positive_rate_pct }}%</td>
+            <td class="col-center" style="color:var(--risk-normal); font-weight:700;">{{ row.true_positives }}</td>
+            <td class="col-center" style="color:var(--risk-warning);">{{ row.false_positives }}</td>
+            <td class="col-center" style="color:var(--risk-severe); font-weight:700;">{{ row.false_negatives }}</td>
+            <td class="col-center">{{ row.true_negatives }}</td>
+            <td class="col-center">
               {% if row.recall_pct is not none %}
                 <strong>{{ row.recall_pct }}%</strong>
               {% else %}
-                <span style="color:var(--text-muted);">N/A (0 events)</span>
+                <span style="color:var(--text-muted); font-size:0.72rem;">N/A (0 HW)</span>
               {% endif %}
             </td>
-            <td>
+            <td class="col-center">
               {% if row.precision_pct is not none %}
                 {{ row.precision_pct }}%
               {% else %}
-                <span style="color:var(--text-muted);">N/A</span>
+                <span style="color:var(--text-muted); font-size:0.72rem;">N/A</span>
               {% endif %}
             </td>
-            <td>{{ row.false_alarm_rate_pct }}%</td>
-            <td>
+            <td class="col-center">{{ row.false_alarm_rate_pct }}%</td>
+            <td class="col-center">
               {% if row.status_color == 'success' %}
-                <span class="badge badge-normal">{{ row.bias_tier }}</span>
+                <span class="badge badge-normal badge-compact" title="{{ row.bias_tier }}">{{ short_tier }}</span>
               {% elif row.status_color == 'info' %}
-                <span class="badge" style="background:var(--brand-50); color:var(--brand-700);">{{ row.bias_tier }}</span>
+                <span class="badge badge-compact" style="background:var(--brand-50); color:var(--brand-700);" title="{{ row.bias_tier }}">{{ short_tier }}</span>
               {% elif row.status_color == 'warning' %}
-                <span class="badge badge-warning">{{ row.bias_tier }}</span>
+                <span class="badge badge-warning badge-compact" title="{{ row.bias_tier }}">{{ short_tier }}</span>
               {% else %}
-                <span class="badge" style="background:var(--bg-muted); color:var(--text-muted);">{{ row.bias_tier }}</span>
+                <span class="badge badge-compact" style="background:var(--bg-muted); color:var(--text-muted);" title="{{ row.bias_tier }}">{{ short_tier }}</span>
               {% endif %}
             </td>
           </tr>
