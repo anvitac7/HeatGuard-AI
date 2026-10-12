@@ -19,15 +19,19 @@ try:
 except Exception:
     pass
 
+import datetime
 import logging
 import os
 from pathlib import Path
 from typing import Any, Dict
 
+import pandas as pd
+
 from flask import Flask, jsonify, render_template, request, send_from_directory
 from werkzeug.exceptions import HTTPException
 
 from services.analytics_service import AnalyticsService
+from services.ethics_service import EthicsService
 from services.genai_service import GenAIService
 from services.prediction_service import PredictionService
 
@@ -74,6 +78,16 @@ def get_genai_service() -> GenAIService:
     if _genai_service is None:
         _genai_service = GenAIService.get_instance()
     return _genai_service
+
+
+_ethics_service: EthicsService = None
+
+
+def get_ethics_service() -> EthicsService:
+    global _ethics_service
+    if _ethics_service is None:
+        _ethics_service = EthicsService.get_instance()
+    return _ethics_service
 
 
 # ----------------------------------------------------------------------------------------
@@ -131,6 +145,23 @@ def chatbot_view():
         "chatbot.html",
         active_page="chatbot",
         cities=cities,
+    )
+
+
+@app.route("/ethics")
+def ethics_view():
+    """Responsible AI Hub: Fairness, Explainability & Safety."""
+    pred_svc = get_prediction_service()
+    cities = pred_svc.get_cities()
+    ethics_svc = get_ethics_service()
+    fairness = ethics_svc.get_fairness_audit()
+    safety = ethics_svc.get_safety_overview()
+    return render_template(
+        "ethics.html",
+        active_page="ethics",
+        cities=cities,
+        fairness=fairness,
+        safety=safety,
     )
 
 
@@ -426,7 +457,112 @@ def api_dispatch_alert():
         return jsonify({"status": "success", "receipt": dispatch_receipt})
     except Exception as e:
         log.error("Dispatch alert error: %s", e, exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 400
+# ----------------------------------------------------------------------------------------
+# REST API Endpoints: Responsible AI & Ethics (Pillars 1, 2, 3)
+# ----------------------------------------------------------------------------------------
+@app.route("/api/ethics/overview", methods=["GET"])
+def api_ethics_overview():
+    """System-wide Responsible AI audit status, disparity summary, and active policies."""
+    ethics_svc = get_ethics_service()
+    fairness = ethics_svc.get_fairness_audit()
+    safety = ethics_svc.get_safety_overview()
+    xai = ethics_svc.get_global_feature_importance()
+    return jsonify({
+        "status": "success",
+        "overview": {
+            "disparity_summary": fairness["disparity_summary"],
+            "safety_overview": safety,
+            "top_features": xai["features"][:5],
+            "audit_timestamp": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }
+    })
+
+
+@app.route("/api/ethics/fairness", methods=["GET"])
+def api_ethics_fairness():
+    """Disaggregated 7-city fairness metrics and comparative evaluation table."""
+    ethics_svc = get_ethics_service()
+    return jsonify({
+        "status": "success",
+        "fairness": ethics_svc.get_fairness_audit(),
+    })
+
+
+@app.route("/api/ethics/fairness/<city>", methods=["GET"])
+def api_ethics_city_fairness(city: str):
+    """Detailed single-city confusion matrix and regional bias analysis."""
+    ethics_svc = get_ethics_service()
+    deep_dive = ethics_svc.get_city_deep_dive(city)
+    if not deep_dive:
+        return jsonify({"status": "error", "message": f"Unknown city: {city}"}), 404
+    return jsonify({
+        "status": "success",
+        "city_audit": deep_dive,
+    })
+
+
+@app.route("/api/ethics/representation", methods=["GET"])
+def api_ethics_representation():
+    """Dataset coverage and sample distribution audit across all 7 cities."""
+    ethics_svc = get_ethics_service()
+    return jsonify({
+        "status": "success",
+        "representation": ethics_svc.get_representation_audit(),
+    })
+
+
+@app.route("/api/ethics/explain", methods=["GET"])
+def api_ethics_explain():
+    """Global feature importance ranking or local prediction factor attribution."""
+    city = request.args.get("city")
+    date = request.args.get("date")
+    ethics_svc = get_ethics_service()
+
+    if city and date:
+        try:
+            explanation = ethics_svc.explain_prediction(city, date)
+            return jsonify({
+                "status": "success",
+                "explanation": explanation,
+            })
+        except Exception as e:
+            log.exception("Local explanation error for %s on %s: %s", city, date, e)
+            return jsonify({"status": "error", "message": str(e)}), 400
+
+    return jsonify({
+        "status": "success",
+        "global_importance": ethics_svc.get_global_feature_importance(),
+    })
+
+
+@app.route("/api/ethics/audit-advisory", methods=["POST"])
+def api_ethics_audit_advisory():
+    """Automated 5-point safety and grounding audit for advisory text."""
+    body = request.get_json(silent=True) or {}
+    city = body.get("city", "Delhi")
+    predicted_risk = body.get("risk_level", "HIGH")
+    advisory_text = body.get("advisory_text", "")
+    persona = body.get("persona", "Citizen")
+
+    if not advisory_text:
+        return jsonify({"status": "error", "message": "Missing advisory_text in request body"}), 400
+
+    ethics_svc = get_ethics_service()
+    audit_res = ethics_svc.audit_advisory(city, predicted_risk, advisory_text, persona=persona)
+    return jsonify({
+        "status": "success",
+        "audit": audit_res,
+    })
+
+
+@app.route("/api/ethics/safety-overview", methods=["GET"])
+def api_ethics_safety_overview():
+    """GenAI safety posture, fallback readiness, and policy disclosures."""
+    ethics_svc = get_ethics_service()
+    return jsonify({
+        "status": "success",
+        "safety_overview": ethics_svc.get_safety_overview(),
+    })
 
 
 @app.route("/api/health", methods=["GET"])

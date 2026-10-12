@@ -118,8 +118,43 @@ def run_tests():
     assert health_res.status_code == 200
     print(f"  [PASS] /api/health (Status: {health_res.get_json()['health']['status']}, Pipeline: {health_res.get_json()['health']['model_pipeline']})")
 
+    # 12. REST: Responsible AI & Ethics Endpoints (Pillars 1, 2, 3)
+    eth_over = client.get("/api/ethics/overview")
+    assert eth_over.status_code == 200
+    assert "disparity_summary" in eth_over.get_json()["overview"]
+
+    fair_res = client.get("/api/ethics/fairness")
+    assert fair_res.status_code == 200
+    assert len(fair_res.get_json()["fairness"]["city_table"]) == 7
+
+    delhi_fair = client.get("/api/ethics/fairness/Delhi")
+    assert delhi_fair.status_code == 200
+    assert delhi_fair.get_json()["city_audit"]["city"] == "Delhi"
+
+    rep_res = client.get("/api/ethics/representation")
+    assert rep_res.status_code == 200
+
+    exp_global = client.get("/api/ethics/explain")
+    assert exp_global.status_code == 200
+
+    exp_local = client.get("/api/ethics/explain?city=Delhi&date=2024-05-28")
+    assert exp_local.status_code == 200
+    assert "top_contributing_factors" in exp_local.get_json()["explanation"]
+
+    audit_adv = client.post("/api/ethics/audit-advisory", json={
+        "city": "Delhi",
+        "risk_level": "HIGH",
+        "advisory_text": "Severe heat conditions predicted. Drink water, seek shade, and stay indoors during peak hours."
+    })
+    assert audit_adv.status_code == 200
+    assert audit_adv.get_json()["audit"]["overall_status"] == "VERIFIED_SAFE"
+
+    safety_res = client.get("/api/ethics/safety-overview")
+    assert safety_res.status_code == 200
+    print("  [PASS] Responsible AI & Ethics: all 7 audit endpoints verified (/overview, /fairness, /fairness/<city>, /representation, /explain, /audit-advisory, /safety-overview)")
+
     print("=" * 60)
-    print("ALL 16 SUITES PASSED FLAWLESSLY! HEATGUARD AI IS 100% OPERATIONAL.")
+    print("ALL 17 SUITES PASSED FLAWLESSLY! HEATGUARD AI IS 100% OPERATIONAL.")
     print("=" * 60)
 
 if __name__ == "__main__":
