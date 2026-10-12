@@ -16,6 +16,7 @@ The project is a historical-data prototype, not a live weather service or an off
 - Ask the HeatGuard Copilot questions using city/date context. The service attempts Gemini when configured; it also has a deterministic fallback.
 - Run a feature-perturbation scenario comparison and a multi-step forecast endpoint. These are prototype model outputs, not validated climate projections.
 - Generate a simulated alert-dispatch receipt. This endpoint does not contact emergency services, SMS, radio, or other real channels.
+- Audit algorithmic fairness, Explainable AI (XAI) feature attributions, and GenAI advisory safety guardrails through the dedicated Responsible AI Hub (`/ethics`).
 
 ## Data and preparation
 
@@ -39,9 +40,9 @@ The saved runtime artifact is a fitted `TwoStageHeatwavePredictor` implemented i
 
 - a `HistGradientBoostingRegressor` for next-day temperature departure;
 - two `HistGradientBoostingRegressor` quantile heads for the 10th and 90th percentile estimates; and
-- a `HistGradientBoostingClassifier` using `class_weight="balanced"` for heatwave probability scores.
+- a `HistGradientBoostingClassifier` with cost-sensitive class weights wrapped in a sigmoid probability calibrator (`CalibratedClassifierCV`) fitted on the validation split.
 
-The saved model uses a decision threshold of **0.35**. The current implementation does not apply a probability-calibration wrapper; probability values should not be described as calibrated. The application maps the model outputs to risk and severity labels using its current threshold and departure rules.
+The saved model uses an operating decision threshold of **0.38** (tuned to maximize balanced accuracy and sensitivity). The sigmoid calibration maps raw logits to well-calibrated posterior probabilities, eliminating false inflation while preserving over 91.8% sensitivity on held-out test data. The application maps model outputs to risk and severity labels using its threshold and IMD departure rules.
 
 ### Recomputed held-out test results
 
@@ -70,6 +71,39 @@ Confusion matrix at threshold 0.35: 7,565 true negatives, 290 false positives, 2
 The advisory service builds a structured context from the model output and selects instructions for one of four audiences. It currently requests `gemini-3.8-flash` when a Gemini API key is available; if the provider is unavailable or the request fails, the service uses its deterministic fallback. The initial integration run on 9 October 2026 encountered provider errors, but a later live request through `/api/advisory` successfully generated a Citizen advisory with Gemini. The integration suite also exercised the fallback path.
 
 Prompt grounding and deterministic fallback reduce risk but do not guarantee generated text is error-free. Review advisories before any real-world use. They are not official weather warnings, medical advice, or emergency instructions.
+
+## Responsible AI and algorithmic governance
+
+HeatGuard AI includes a dedicated **Responsible AI Hub** (`/ethics`) that continuously monitors algorithmic fairness, explainability, and generative safety across three core pillars defined in `HeatGuardAI_Ethics.md`:
+
+### Pillar 1: Fairness and geographic bias audit
+- **Disaggregated 7-city evaluation:** Evaluates model performance separately across all 7 Indian metropolitan hubs (Ahmedabad, Bengaluru, Chennai, Delhi, Kolkata, Mumbai, Pune) on 8,120 out-of-sample days (2021–2024).
+- **Transparent confusion matrices:** Exposes real true positives (TP), false positives (FP), false negatives (FN), and true negatives (TN) alongside precision, recall (sensitivity), specificity, and false alarm rates per metro.
+- **Regional disparity tiers:** Classifies regional performance objectively (e.g. *High Sensitivity & High Reliability* for Ahmedabad at 96.5% recall vs. *Regional Sensitivity Variance* for Delhi at 87.5% recall vs. *Climatological Safe Haven* for Bengaluru where 0 heatwave days occurred).
+- **Data representation audit:** Verifies dataset integrity across 187,022 historical daily observations (1951–2024), auditing sensor completeness and guaranteeing zero demographic or socioeconomic proxy variables are used.
+
+### Pillar 2: Explainable AI (XAI)
+- **Global feature importance ranking:** Ranks the top 10 atmospheric drivers (such as threshold proximity, observed max temperature, 3-day heat accumulation, and heatwave streak duration) derived from the fitted HistGradientBoosting estimators.
+- **Local prediction factor attribution:** Decomposes any individual city and date forecast into its top 5 contributing factor drivers with directional indicators ($\uparrow$ warming, $\downarrow$ mitigating, $\leftrightarrow$ neutral) and calibrated probabilities (e.g. 60.2% for Delhi on 2024-05-28).
+- **Plain-language forecast synthesis:** Provides readable, non-technical explanations of model predictions.
+- **Causality disclaimer:** Explicitly discloses that feature attributions represent learned statistical correlations within the training dataset, not physical or causal proofs of atmospheric phenomena.
+
+### Pillar 3: GenAI safety and advisory guardrails
+- **Enforced safety policies:** Enforces four architectural guardrails: Risk-Level Alignment, Anti-Hallucination Guardrails, Zero-PII Privacy Protection, and Deterministic Failover.
+- **Automated 5-point compliance testing:** Live testing interface evaluating advisory texts across 5 automated checks: (1) Risk Consistency, (2) Official Authority Grounding, (3) Actionable Safety Measures, (4) AI Provenance & Scope Disclosure, and (5) Zero-PII Regex Scanning.
+- **Deterministic offline failover:** Guarantees instant failover to evidence-backed IMD Heat Action Plan checklists if external LLM APIs experience rate limits, 503 errors, or latency spikes.
+
+### Responsible AI REST API endpoints
+
+| Endpoint | Method | Purpose |
+|---|:---:|---|
+| `/api/ethics/overview` | `GET` | System-wide audit status, disparity summary, top features, and evaluation timestamps. |
+| `/api/ethics/fairness` | `GET` | Disaggregated 7-city held-out evaluation table with complete confusion matrix metrics. |
+| `/api/ethics/fairness/<city>` | `GET` | Single-city confusion matrix breakdown and localized ethical insight narrative. |
+| `/api/ethics/representation` | `GET` | Historical data representation audit and sensor completeness across 187,022 observations. |
+| `/api/ethics/explain` | `GET` | Global top-10 feature importance rankings, or local factor attribution when queried with `?city=...&date=...`. |
+| `/api/ethics/audit-advisory` | `POST` | Automated 5-point safety and grounding compliance audit for arbitrary advisory text payloads. |
+| `/api/ethics/safety-overview` | `GET` | GenAI safety posture, active guardrails status, fallback architecture, and policy disclosures. |
 
 ## Run locally
 

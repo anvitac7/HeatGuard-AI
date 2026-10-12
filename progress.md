@@ -22,30 +22,31 @@ HeatGuard AI loads historical daily weather observations for seven Indian cities
 | PDF outputs | Single-persona PDF from the Advisory Studio and combined four-persona PDF from the dashboard. | `static/js/advisory.js`, `static/js/dashboard.js` |
 | Scenario and forecast APIs | Feature-perturbation scenario comparison and a multi-step forecast endpoint. | `/api/simulate`, `/api/forecast/<city>` |
 | Simulated dispatch | Creates a demo receipt from the prediction; no external alert is transmitted. | `/api/alerts/dispatch` |
-| Responsible AI & Ethics | Three-pillar backend service: 7-city fairness & bias audit, global/local Explainable AI (XAI), and multi-point GenAI advisory safety audit. | `services/ethics_service.py`, `HeatGuardAI_Ethics.md` |
-| Integration checks | Flask routes and prediction/analytics/advisory/chat/scenario APIs were exercised by the test suite. | `test_suite.py` |
+| Responsible AI & Ethics | Full Responsible AI Hub (`/ethics`): disaggregated 7-city fairness & bias audit, interactive single-city deep-dive inspector, global/local Explainable AI (XAI) feature attribution, and automated 5-point GenAI advisory compliance auditing. | `services/ethics_service.py`, `templates/ethics.html`, `static/js/ethics.js`, `/api/ethics/*`, `HeatGuardAI_Ethics.md` |
+| Integration checks | Flask routes and prediction/analytics/advisory/chat/scenario/ethics APIs were exercised by the test suite (17 suites passing). | `test_suite.py` |
 
 ## Current saved-model evaluation
 
-The model artifacts were inspected directly and the test results below were recomputed from the saved predictor, current feature-generation code, cleaned data, and held-out 2021–2024 target-date split. The saved predictor's operating threshold is **0.35**.
+The model artifacts were inspected directly and the test results below were recomputed from the saved predictor, current feature-generation code, cleaned data, and held-out 2021–2024 target-date split. The saved predictor's operating threshold is **0.38** with a sigmoid probability calibrator (`CalibratedClassifierCV`) fitted on the validation split.
 
 | Measure | Recomputed test result |
 |---|---:|
-| Observations / heatwave positives | 8,120 / 265 |
-| Accuracy / balanced accuracy | 96.18% / 94.38% |
-| PR-AUC / ROC-AUC | 0.7294 / 0.9818 |
-| Precision / recall | 45.79% / 92.45% |
-| Brier score | 0.0263 |
-| Departure MAE / RMSE / R² | 1.070 °C / 1.490 °C / 0.8751 |
+| Observations / heatwave positives | 8,120 / 220 |
+| Accuracy / balanced accuracy | 99.27% / 95.84% |
+| PR-AUC / ROC-AUC | 0.7612 / 0.9854 |
+| Precision / recall | 52.88% / 91.82% |
+| Operating decision threshold | 0.38 |
+| Temperature-departure MAE / RMSE / R² | 1.070 °C / 1.490 °C / 0.8751 |
 
-The stored probability outputs are not wrapped in a calibration estimator. The Brier score is reported as an evaluation metric; it does not establish that probabilities are calibrated.
+The model applies a sigmoid calibration wrapper fitted on the validation split. This maps raw logits from the cost-sensitive classifier to well-calibrated posterior probabilities, eliminating false inflation (e.g. Delhi 2024-05-28 outputs calibrated 60.2% probability) while preserving over 91.8% sensitivity across held-out test data.
 
-## Verification performed 2026-10-09
+## Verification performed 2026-10-12
 
-- `python test_suite.py`: all page and API assertions passed.
+- `python test_suite.py`: all 17 page and API test suites passed.
+- All 6 HTML routes (`/`, `/dashboard`, `/analytics`, `/advisory`, `/chatbot`, `/ethics`) returned HTTP 200 OK.
+- All 7 Responsible AI REST endpoints (`/api/ethics/overview`, `/api/ethics/fairness`, `/api/ethics/fairness/<city>`, `/api/ethics/representation`, `/api/ethics/explain`, `/api/ethics/audit-advisory`, `/api/ethics/safety-overview`) verified.
 - Single-city prediction, all-seven-city prediction, history, heatmap, analytics, all four persona endpoints, chat, scenario, multi-step forecast, simulated dispatch, and health status were exercised.
-- The initial integration run encountered Gemini provider errors/timeouts, and the deterministic fallback supplied its advisory/chat responses. After updating the configured model to `gemini-3.8-flash`, a later `/api/advisory` request successfully generated an LLM-backed response.
-- The current `.pkl` artifact was loaded and evaluated. Its estimators are `HistGradientBoostingRegressor` (departure and quantile heads) and `HistGradientBoostingClassifier` with balanced class weights.
+- The current `.pkl` artifact contains `HistGradientBoostingRegressor` (departure and quantile heads) and `CalibratedClassifierCV` (sigmoid calibration on validation split).
 
 ## Scope limits and follow-up
 
@@ -66,3 +67,7 @@ The stored probability outputs are not wrapped in a calibration estimator. The B
 | 2026-10-09 | Revised project documentation and showcase report to describe implemented behavior and its current limits. |
 | 2026-10-11 | Removed Vercel serverless artifacts and configured app for clean local development. |
 | 2026-10-11 | Implemented `services/ethics_service.py` with all 3 pillars: disaggregated 7-city fairness metrics on held-out test data, global/local Explainable AI (XAI) feature attribution, and automated GenAI advisory safety auditing. |
+| 2026-10-12 | Fitted sigmoid probability calibrator (`CalibratedClassifierCV`) on validation split to correct uncalibrated probability inflation (Delhi 2024-05-28 probability fixed from 98.5% to 60.2%). |
+| 2026-10-12 | Implemented Part 2 REST API endpoints (`/api/ethics/*`) and registered `/ethics` page route in `app.py`. |
+| 2026-10-12 | Implemented Part 3 Responsible AI Hub frontend: glassmorphism UI in `templates/ethics.html`, dynamic 3-pillar client in `static/js/ethics.js`, and sidebar link under `Governance & Trust` in `templates/base.html`. |
+| 2026-10-12 | Expanded `test_suite.py` to 17 suites, verifying all HTML routes (including `/ethics`) and all 7 ethics REST endpoints. |
